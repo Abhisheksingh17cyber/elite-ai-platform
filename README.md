@@ -4,12 +4,29 @@ A comprehensive coding challenge platform designed for top-tier developers. This
 
 ## Features
 
+### Candidate Features
 - 🎯 **Interactive Challenge Interface** - Timer, code editor, file explorer, and console
 - ⏱️ **120-Minute Timed Challenge** - Anti-cheat timer with urgency indicators
 - 🔐 **Security Trap Detection** - Automatically detects hardcoded API keys and SQL injection vulnerabilities
 - 📊 **Real-time Scoring** - Security, Architecture, and Performance metrics
 - 🎨 **Modern UI** - Framer Motion animations, Monaco Editor, and particle effects
 - 📱 **Responsive Design** - Works on desktop and mobile devices
+
+### Admin Features
+- 👁️ **Live Monitoring Dashboard** - Watch candidates in real-time
+- 📈 **Progress Tracking** - Monitor completion rates and scores
+- 🔍 **Code Review** - View candidate code with one click
+- 🚩 **Session Management** - Flag suspicious activity or terminate sessions
+- 📊 **Statistics** - Pass rates, score distributions, active sessions
+
+### Anti-Cheat System
+- 🛡️ **Tab/Window Detection** - Detects when candidates switch tabs
+- ⌨️ **DevTools Prevention** - Blocks F12 and Ctrl+Shift+I
+- 📋 **Copy/Paste Blocking** - Prevents copying from external sources
+- 🖱️ **Right-Click Prevention** - Disables context menu
+- 📸 **Screenshot Detection** - Detects PrintScreen attempts
+- ⏰ **Idle Detection** - Flags inactive sessions (3 min timeout)
+- 🖥️ **Fullscreen Mode** - Enforced exam environment
 
 ## Tech Stack
 
@@ -19,7 +36,7 @@ A comprehensive coding challenge platform designed for top-tier developers. This
 - **State Management**: Zustand with persistence
 - **Code Editor**: Monaco Editor
 - **Animations**: Framer Motion
-- **Particles**: tsparticles
+- **Database**: Neon PostgreSQL (serverless)
 - **Icons**: Lucide React
 
 ## Getting Started
@@ -40,6 +57,25 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
+
+### Admin Access
+
+Navigate to `/admin` to access the admin dashboard.
+
+**Demo Credentials:**
+- Email: `admin@elitechallenge.com`
+- Password: `admin123`
+
+### Database Setup (Neon)
+
+1. Create an account at [neon.tech](https://neon.tech)
+2. Create a new project
+3. Copy your connection string
+4. Create `.env.local` from `.env.example`:
+   ```bash
+   cp .env.example .env.local
+   ```
+5. Add your Neon connection string to `DATABASE_URL`
 
 ### Build for Production
 

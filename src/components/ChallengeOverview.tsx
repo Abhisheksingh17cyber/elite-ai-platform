@@ -47,23 +47,23 @@ export default function ChallengeOverview() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative bg-linear-to-r from-red-600 via-purple-600 to-blue-600 text-white p-8 rounded-2xl overflow-hidden"
+        className="relative bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 text-white p-8 rounded-2xl overflow-hidden border border-blue-500/30"
       >
         {/* Animated background */}
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
         <motion.div
-          className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent"
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
           animate={{ x: ['-100%', '100%'] }}
           transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
         />
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <Flame className="w-10 h-10 text-orange-400 animate-pulse" />
+            <Flame className="w-10 h-10 text-blue-400 animate-pulse" />
             <h1 className="text-4xl font-bold">
               Elite AI-Architect Challenge
             </h1>
-            <span className="bg-red-500 px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+            <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-bold animate-pulse">
               EXTREME MODE
             </span>
           </div>
@@ -111,9 +111,9 @@ export default function ChallengeOverview() {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-red-950/50 border-l-4 border-red-500 p-6 rounded-r-xl"
+        className="bg-[#12121a] border-l-4 border-amber-500 p-6 rounded-r-xl border border-[#27272a]"
       >
-        <h3 className="font-bold text-red-400 text-xl mb-4 flex items-center gap-2">
+        <h3 className="font-bold text-amber-400 text-xl mb-4 flex items-center gap-2">
           <AlertTriangle className="w-6 h-6" />
           WARNING: This is NOT a typical coding challenge
         </h3>
@@ -130,7 +130,7 @@ export default function ChallengeOverview() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.3 + idx * 0.1 }}
-              className="flex items-start gap-2 text-red-300"
+              className="flex items-start gap-2 text-amber-300"
             >
               <XCircle className="w-4 h-4 mt-1 shrink-0" />
               <span className="text-sm">{warning}</span>
@@ -146,9 +146,9 @@ export default function ChallengeOverview() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-linear-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/30 p-6 rounded-xl"
+          className="bg-[#12121a] border border-[#27272a] p-6 rounded-xl"
         >
-          <h3 className="font-bold text-lg mb-4 text-purple-300 flex items-center gap-2">
+          <h3 className="font-bold text-lg mb-4 text-blue-400 flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
             What Makes This EXTREME
           </h3>
@@ -161,7 +161,7 @@ export default function ChallengeOverview() {
                 transition={{ duration: 0.3, delay: 0.5 + idx * 0.1 }}
                 className="flex gap-3"
               >
-                <feature.icon className="w-8 h-8 text-purple-400 shrink-0" />
+                <feature.icon className="w-8 h-8 text-blue-400 shrink-0" />
                 <div>
                   <p className="font-semibold text-gray-200">{feature.title}</p>
                   <p className="text-sm text-gray-400">{feature.desc}</p>
@@ -176,9 +176,9 @@ export default function ChallengeOverview() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="bg-linear-to-br from-blue-900/30 to-cyan-900/30 border border-blue-500/30 p-6 rounded-xl"
+          className="bg-[#12121a] border border-[#27272a] p-6 rounded-xl"
         >
-          <h3 className="font-bold text-lg mb-4 text-blue-300 flex items-center gap-2">
+          <h3 className="font-bold text-lg mb-4 text-blue-400 flex items-center gap-2">
             <Brain className="w-5 h-5" />
             Why IIT Students Fail
           </h3>
@@ -224,10 +224,10 @@ export default function ChallengeOverview() {
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
             onClick={startChallenge}
-            className="relative w-full bg-linear-to-r from-red-600 via-purple-600 to-blue-600 text-white py-5 rounded-xl font-bold text-xl overflow-hidden group"
+            className="relative w-full bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 text-white py-5 rounded-xl font-bold text-xl overflow-hidden group border border-blue-500/30"
           >
             <motion.div
-              className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
               animate={{ x: isHovered ? ['0%', '200%'] : '0%' }}
               transition={{ duration: 0.8 }}
             />
