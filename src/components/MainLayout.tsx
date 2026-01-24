@@ -10,14 +10,12 @@ import {
   X,
   Shield,
   AlertTriangle,
-  Lock,
-  LogIn
+  Lock
 } from 'lucide-react';
 import { useChallengeStore } from '@/store/challengeStore';
 import { cn } from '@/lib/utils';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { useDatabaseSync } from '@/hooks/useDatabaseSync';
-import { useRouter } from 'next/navigation';
 
 import Timer from './Timer';
 import ChallengeOverview from './ChallengeOverview';
@@ -47,7 +45,6 @@ const getVisibleTabs = (challengeStarted: boolean) => {
 };
 
 export default function MainLayout() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -185,31 +182,12 @@ export default function MainLayout() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (isHydrated && !candidateEmail) {
-      router.push('/login');
-    }
-  }, [isHydrated, candidateEmail, router]);
-
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-400 text-lg">Loading Elite Challenge Platform...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading while redirecting to login
-  if (!candidateEmail) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <LogIn className="w-12 h-12 text-blue-500 animate-pulse" />
-          <p className="text-gray-400 text-lg">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -303,7 +281,7 @@ export default function MainLayout() {
                 </ul>
               </div>
               <button
-                onClick={() => router.push('/login')}
+                onClick={() => window.location.href = '/'}
                 className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
               >
                 Exit
