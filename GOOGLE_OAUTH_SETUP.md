@@ -87,7 +87,7 @@ Admins will continue using email + password authentication.
 
 ```env
 # Neon Database Connection
-DATABASE_URL=postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=your-neon-connection-string-from-neon-console
 
 # NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000
@@ -206,7 +206,7 @@ npm run dev
 
 3. **Try Pooler Connection:**
    ```env
-   DATABASE_URL=postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require
+   DATABASE_URL=your-pooler-connection-string-from-neon-console
    ```
 
 4. **Verify Database Credentials:**

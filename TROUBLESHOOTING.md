@@ -81,7 +81,7 @@ npm install ws
 2. Update `.env.local`:
 ```env
 # Use wss:// protocol instead of postgresql://
-DATABASE_URL=postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=your-neon-connection-string-from-neon-console
 ```
 
 The code should automatically detect and use WebSocket when needed.

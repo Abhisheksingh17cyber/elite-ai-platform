@@ -143,7 +143,7 @@ elite-ai-platform/
 
 ```env
 # Neon Database Connection
-DATABASE_URL=postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=your-neon-connection-string-from-neon-console
 
 # NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000

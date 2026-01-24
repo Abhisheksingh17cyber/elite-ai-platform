@@ -23,7 +23,7 @@ This guide will connect your Elite AI-Architect platform to:
 3. Copy the **Connection string** (should look like this):
 
 ```
-postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah.us-east-1.aws.neon.tech/neondb?sslmode=require
+postgresql://your-user:your-password@your-endpoint.neon.tech/your-database?sslmode=require
 ```
 
 ### Step 3: Update .env.local
@@ -32,7 +32,7 @@ Open `.env.local` in your project and update:
 
 ```env
 # ===== NEON DATABASE =====
-DATABASE_URL=postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=your-neon-connection-string-from-neon-console
 ```
 
 ### Step 4: Fix DNS Issues (If Any)
@@ -199,7 +199,7 @@ Your complete `.env.local` should look like this:
 
 ```env
 # ===== NEON DATABASE =====
-DATABASE_URL=postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=your-neon-connection-string-from-neon-console
 
 # ===== NEXTAUTH CONFIGURATION =====
 NEXTAUTH_URL=http://localhost:3000
@@ -377,7 +377,7 @@ openssl rand -base64 32
 2. Run `node test-connection.js` to verify
 3. Try switching to pooler connection:
    ```env
-   DATABASE_URL=postgresql://neondb_owner:npg_SWYytZFmgB48@ep-sweet-unit-ahwph4ah-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require
+   DATABASE_URL=your-pooler-connection-string-from-neon-console
    ```
 
 ### Issue: "Sign in failed. Check the details you provided are correct."
