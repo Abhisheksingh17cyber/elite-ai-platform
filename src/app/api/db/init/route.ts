@@ -34,7 +34,7 @@ export async function POST() {
         candidate_id UUID REFERENCES candidates(id) ON DELETE CASCADE,
         started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         ended_at TIMESTAMP WITH TIME ZONE,
-        time_remaining INTEGER DEFAULT 7200,
+        time_remaining INTEGER DEFAULT 2700,
         status VARCHAR(50) DEFAULT 'in_progress',
         final_score DECIMAL(5,2),
         security_score DECIMAL(5,2) DEFAULT 0,
@@ -90,10 +90,10 @@ export async function POST() {
     await sql`CREATE INDEX IF NOT EXISTS idx_anticheat_session ON anti_cheat_events(session_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_candidates_email ON candidates(email)`;
 
-    // Insert default admin user if not exists
+    // Insert default admin user if not exists (password: admin123 hashed with SHA-256)
     await sql`
       INSERT INTO admin_users (email, name, password_hash, role)
-      VALUES ('admin@elitechallenge.com', 'Admin', 'admin123', 'super_admin')
+      VALUES ('abhiisingh240@gmail.com', 'Abhishek Singh', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'super_admin')
       ON CONFLICT (email) DO NOTHING
     `;
 

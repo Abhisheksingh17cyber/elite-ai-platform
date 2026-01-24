@@ -126,9 +126,9 @@ INSERT INTO
     admin_users (email, password_hash, name, role)
 VALUES
     (
-        'admin@elitechallenge.com',
+        'abhiisingh240@gmail.com',
         '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
-        'Administrator',
+        'Abhishek Singh',
         'super_admin'
     ) ON CONFLICT (email) DO NOTHING;
 

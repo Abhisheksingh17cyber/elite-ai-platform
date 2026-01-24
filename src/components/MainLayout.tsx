@@ -10,12 +10,14 @@ import {
   X,
   Shield,
   AlertTriangle,
-  Lock
+  Lock,
+  LogIn
 } from 'lucide-react';
 import { useChallengeStore } from '@/store/challengeStore';
 import { cn } from '@/lib/utils';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { useDatabaseSync } from '@/hooks/useDatabaseSync';
+import { useRouter } from 'next/navigation';
 
 import Timer from './Timer';
 import ChallengeOverview from './ChallengeOverview';
@@ -45,12 +47,14 @@ const getVisibleTabs = (challengeStarted: boolean) => {
 };
 
 export default function MainLayout() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { challengeStarted, sessionId } = useChallengeStore();
+  const [isTerminated, setIsTerminated] = useState(false);
+  const { challengeStarted, sessionId, candidateEmail, timeRemaining, files, endChallenge, addConsoleOutput } = useChallengeStore();
   
   // Database sync - syncs code and session data to Neon database
   useDatabaseSync();
@@ -92,6 +96,87 @@ export default function MainLayout() {
     prevViolationsCount.current = violations.length;
   }, [violations.length, challengeStarted]);
 
+  // Auto-submit when timer reaches 0
+  useEffect(() => {
+    if (challengeStarted && timeRemaining === 0 && sessionId && !isTerminated) {
+      const autoSubmit = async () => {
+        addConsoleOutput('warning', '⏰ Time is up! Auto-submitting your code...');
+        
+        try {
+          // Save final code
+          await fetch(`/api/sessions/${sessionId}/code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: JSON.stringify(files), language: 'python' })
+          });
+          
+          // Mark session as completed
+          await fetch(`/api/sessions/${sessionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'completed', time_remaining: 0 })
+          });
+          
+          addConsoleOutput('success', '✅ Code auto-submitted successfully!');
+          endChallenge();
+        } catch (error) {
+          console.error('Auto-submit error:', error);
+          addConsoleOutput('error', '❌ Auto-submit failed');
+        }
+      };
+      
+      autoSubmit();
+    }
+  }, [challengeStarted, timeRemaining, sessionId, files, endChallenge, addConsoleOutput, isTerminated]);
+
+  // Terminate test on critical cheating (5+ violations or 3+ tab switches)
+  useEffect(() => {
+    if (!challengeStarted || !sessionId || isTerminated) return;
+    
+    const criticalViolations = violations.filter(v => v.severity === 'critical' || v.severity === 'high');
+    
+    if (criticalViolations.length >= 3 || tabSwitchCount >= 3 || violations.length >= 5) {
+      const terminateSession = async () => {
+        setIsTerminated(true);
+        addConsoleOutput('error', '🚨 TEST TERMINATED: Multiple cheating violations detected');
+        addConsoleOutput('error', `   Critical violations: ${criticalViolations.length}`);
+        addConsoleOutput('error', `   Tab switches: ${tabSwitchCount}`);
+        addConsoleOutput('error', `   Total violations: ${violations.length}`);
+        
+        try {
+          // Log termination event
+          await fetch(`/api/sessions/${sessionId}/anticheat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              eventType: 'test_terminated',
+              severity: 'critical',
+              details: 'Test terminated due to multiple cheating violations',
+              metadata: { 
+                criticalViolations: criticalViolations.length,
+                tabSwitches: tabSwitchCount,
+                totalViolations: violations.length
+              }
+            })
+          });
+          
+          // Mark session as terminated
+          await fetch(`/api/sessions/${sessionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'terminated' })
+          });
+          
+          endChallenge();
+        } catch (error) {
+          console.error('Termination error:', error);
+        }
+      };
+      
+      terminateSession();
+    }
+  }, [violations, tabSwitchCount, challengeStarted, sessionId, endChallenge, addConsoleOutput, isTerminated]);
+
   // Use requestAnimationFrame to defer hydration state update
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -100,12 +185,31 @@ export default function MainLayout() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (isHydrated && !candidateEmail) {
+      router.push('/login');
+    }
+  }, [isHydrated, candidateEmail, router]);
+
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-400 text-lg">Loading Elite Challenge Platform...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while redirecting to login
+  if (!candidateEmail) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <LogIn className="w-12 h-12 text-blue-500 animate-pulse" />
+          <p className="text-gray-400 text-lg">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -164,6 +268,46 @@ export default function MainLayout() {
                   </button>
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Termination Modal */}
+      <AnimatePresence>
+        {isTerminated && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm z-100 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-[#12121a] border border-red-500/50 rounded-2xl p-8 max-w-lg w-full text-center"
+            >
+              <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertTriangle className="w-10 h-10 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-red-400 mb-4">Test Terminated</h2>
+              <p className="text-gray-400 mb-6">
+                Your test has been terminated due to multiple anti-cheat violations.
+                This incident has been logged and reported.
+              </p>
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6 text-left">
+                <p className="text-red-400 text-sm font-medium mb-2">Violations detected:</p>
+                <ul className="text-gray-400 text-sm space-y-1">
+                  <li>• Tab switches: {tabSwitchCount}/3</li>
+                  <li>• Critical violations: {violations.filter(v => v.severity === 'critical' || v.severity === 'high').length}</li>
+                  <li>• Total violations: {violations.length}</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => router.push('/login')}
+                className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Exit
+              </button>
             </motion.div>
           </motion.div>
         )}
@@ -319,8 +463,8 @@ export default function MainLayout() {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              {/* Action Buttons - Hidden during active challenge */}
-              {!challengeStarted && <ActionButtons />}
+              {/* Action Buttons - Always shown when challenge is active */}
+              {challengeStarted && <ActionButtons />}
 
               {/* Main Coding Area */}
               <div className="grid grid-cols-12 gap-4">

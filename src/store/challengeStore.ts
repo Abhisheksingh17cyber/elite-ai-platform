@@ -393,7 +393,7 @@ export const useChallengeStore = create<ChallengeState>()(
         timeRemaining: CHALLENGE_DURATION,
         consoleOutput: [{
           type: 'info',
-          text: '🚀 Challenge started! You have 120 minutes. Good luck!',
+          text: '🚀 Challenge started! You have 45 minutes. Good luck!',
           timestamp: Date.now()
         }]
       }),

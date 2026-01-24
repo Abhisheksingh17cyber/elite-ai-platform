@@ -62,8 +62,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 
 Navigate to `/admin` to access the admin dashboard.
 
-**Demo Credentials:**
-- Email: `admin@elitechallenge.com`
+**Admin Credentials:**
+- Email: `abhiisingh240@gmail.com`
 - Password: `admin123`
 
 ### Database Setup (Neon)
@@ -149,9 +149,9 @@ CREATE INDEX IF NOT EXISTS idx_admin_email ON admin_users(email);
 -- INSERT DEFAULT ADMIN (password: admin123)
 INSERT INTO admin_users (email, password_hash, name, role)
 VALUES (
-    'admin@elitechallenge.com',
+    'abhiisingh240@gmail.com',
     '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
-    'Administrator',
+    'Abhishek Singh',
     'super_admin'
 ) ON CONFLICT (email) DO NOTHING;
 ```

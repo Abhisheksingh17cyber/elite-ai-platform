@@ -107,7 +107,7 @@ export default function Timer() {
         <motion.div
           className={`h-full ${isCritical ? 'bg-red-400' : isUrgent ? 'bg-orange-400' : 'bg-white'}`}
           initial={{ width: '100%' }}
-          animate={{ width: `${(timeRemaining / (120 * 60)) * 100}%` }}
+          animate={{ width: `${(timeRemaining / (45 * 60)) * 100}%` }}
           transition={{ duration: 0.5 }}
         />
       </div>

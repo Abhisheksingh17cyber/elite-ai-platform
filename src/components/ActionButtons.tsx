@@ -1,12 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Play, 
   TestTube, 
   Shield, 
   Upload,
-  Github
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 import { useChallengeStore } from '@/store/challengeStore';
 import { detectApiKeyTrap, detectSqlInjection, checkArchitecture } from '@/lib/utils';
@@ -14,13 +16,21 @@ import { detectApiKeyTrap, detectSqlInjection, checkArchitecture } from '@/lib/u
 export default function ActionButtons() {
   const { 
     files,
+    sessionId,
     challengeStarted,
     addConsoleOutput,
     updateScores,
     setTestResults,
     setTrapDetected,
-    addVulnerability
+    addVulnerability,
+    endChallenge,
+    securityScore,
+    architectureScore,
+    performanceScore
   } = useChallengeStore();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const runCode = () => {
     addConsoleOutput('info', '▶ Running code...');
@@ -138,28 +148,90 @@ export default function ActionButtons() {
     }, 1500);
   };
 
-  const submitCode = () => {
+  const submitCode = async () => {
+    if (isSubmitting || isSubmitted) return;
+    
+    setIsSubmitting(true);
     addConsoleOutput('info', '📤 Preparing submission...');
     
-    setTimeout(() => {
+    try {
       const allCode = Object.values(files).join('\n');
       const trapResult = detectApiKeyTrap(allCode);
       
-      if (!trapResult.passed) {
-        addConsoleOutput('error', '🚫 SUBMISSION BLOCKED');
-        addConsoleOutput('error', 'Cannot submit code with hardcoded credentials');
-        addConsoleOutput('warning', 'Remove the API key "sk-prod-key-123" and use environment variables');
-        return;
-      }
-
-      addConsoleOutput('success', '✅ Code validated for submission');
-      addConsoleOutput('info', '🚀 Submitting to evaluation server...');
+      // Calculate final scores
+      const sqlResult = detectSqlInjection(allCode);
+      const archResult = checkArchitecture(allCode);
       
-      setTimeout(() => {
-        addConsoleOutput('success', '✅ Submission received!');
-        addConsoleOutput('info', 'Your code is being evaluated. Results will be emailed within 24 hours.');
-      }, 2000);
-    }, 1000);
+      let finalSecurityScore = securityScore;
+      let finalArchScore = architectureScore;
+      const finalPerfScore = performanceScore;
+      
+      // Update scores if not calculated yet
+      if (finalSecurityScore === 0) {
+        finalSecurityScore = trapResult.passed ? 50 : 0;
+        finalSecurityScore += sqlResult.passed ? 30 : 0;
+        finalSecurityScore = Math.min(finalSecurityScore, 100);
+      }
+      
+      if (finalArchScore === 0) {
+        finalArchScore = archResult.score;
+      }
+      
+      const totalScore = (finalSecurityScore + finalArchScore + finalPerfScore) / 3;
+
+      // Submit to database
+      if (sessionId) {
+        addConsoleOutput('info', '🚀 Submitting to server...');
+        
+        // Save final code snapshot
+        await fetch(`/api/sessions/${sessionId}/code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            code: JSON.stringify(files), 
+            language: 'python' 
+          })
+        });
+        
+        // Update session with final scores and completed status
+        const response = await fetch(`/api/sessions/${sessionId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'completed',
+            final_score: totalScore,
+            security_score: finalSecurityScore,
+            architecture_score: finalArchScore,
+            performance_score: finalPerfScore,
+            time_remaining: 0
+          })
+        });
+        
+        if (response.ok) {
+          addConsoleOutput('success', '✅ Submission successful!');
+          addConsoleOutput('info', `📊 Final Score: ${totalScore.toFixed(1)}/100`);
+          addConsoleOutput('info', `   Security: ${finalSecurityScore}/100`);
+          addConsoleOutput('info', `   Architecture: ${finalArchScore}/100`);
+          addConsoleOutput('info', `   Performance: ${finalPerfScore}/100`);
+          
+          if (!trapResult.passed) {
+            addConsoleOutput('warning', '⚠️ Hardcoded secrets detected - this affects your security score');
+          }
+          
+          setIsSubmitted(true);
+          endChallenge();
+        } else {
+          addConsoleOutput('error', '❌ Submission failed. Please try again.');
+        }
+      } else {
+        addConsoleOutput('error', '❌ No session found. Please refresh and try again.');
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      addConsoleOutput('error', '❌ Submission error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const buttonClass = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -205,24 +277,28 @@ export default function ActionButtons() {
       </motion.button>
 
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: isSubmitted ? 1 : 1.02 }}
+        whileTap={{ scale: isSubmitted ? 1 : 0.98 }}
         onClick={submitCode}
-        disabled={!challengeStarted}
-        className={`${buttonClass} bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white`}
+        disabled={!challengeStarted || isSubmitting || isSubmitted}
+        className={`${buttonClass} ${isSubmitted ? 'bg-green-600' : 'bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'} text-white`}
       >
-        <Upload className="w-4 h-4" />
-        Submit
-      </motion.button>
-
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => window.open('https://classroom.github.com', '_blank')}
-        className={`${buttonClass} bg-gray-700 hover:bg-gray-600 text-white`}
-      >
-        <Github className="w-4 h-4" />
-        GitHub Classroom
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Submitting...
+          </>
+        ) : isSubmitted ? (
+          <>
+            <CheckCircle className="w-4 h-4" />
+            Submitted
+          </>
+        ) : (
+          <>
+            <Upload className="w-4 h-4" />
+            Submit
+          </>
+        )}
       </motion.button>
     </motion.div>
   );
