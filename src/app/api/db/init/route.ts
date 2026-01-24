@@ -79,8 +79,15 @@ export async function POST() {
         name VARCHAR(255) NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(50) DEFAULT 'admin',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        last_login TIMESTAMP WITH TIME ZONE
       )
+    `;
+
+    // Add last_login column if it doesn't exist (for existing tables)
+    await sql`
+      ALTER TABLE admin_users 
+      ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE
     `;
 
     // Create indexes for better performance

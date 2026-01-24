@@ -42,12 +42,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update last login
-    await sql`
-      UPDATE admin_users 
-      SET last_login = NOW()
-      WHERE id = ${admin[0].id}
-    `;
+    // Update last login (try-catch in case column doesn't exist)
+    try {
+      await sql`
+        UPDATE admin_users 
+        SET last_login = NOW()
+        WHERE id = ${admin[0].id}
+      `;
+    } catch (e) {
+      console.log('Could not update last_login:', e);
+    }
 
     // Generate a simple session token (in production, use JWT)
     const sessionToken = createHash('sha256')
