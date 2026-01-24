@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { LiveMonitoringData, TestStatistics, AntiCheatEvent } from '@/lib/database/types';
+import type { LiveMonitoringData, TestStatistics } from '@/lib/database/types';
 
 interface AdminState {
   // Auth

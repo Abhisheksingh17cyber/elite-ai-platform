@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -54,6 +54,9 @@ export default function MainLayout() {
   
   const warningsRemaining = 5 - Math.min(5, violations.length);
   
+  // Track previous violations count for comparison
+  const prevViolationsCount = useRef(0);
+  
   // Track fullscreen state
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -63,11 +66,16 @@ export default function MainLayout() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Show warning modal on new violations
+  // Show warning modal when new violations occur
   useEffect(() => {
-    if (violations.length > 0 && challengeStarted) {
-      setShowWarningModal(true);
+    if (violations.length > prevViolationsCount.current && challengeStarted) {
+      // Defer the state update to avoid synchronous setState in effect
+      const timer = setTimeout(() => {
+        setShowWarningModal(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
+    prevViolationsCount.current = violations.length;
   }, [violations.length, challengeStarted]);
 
   // Use requestAnimationFrame to defer hydration state update
@@ -101,7 +109,7 @@ export default function MainLayout() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-100 flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -149,7 +157,7 @@ export default function MainLayout() {
 
       {/* Security Banner (when challenge is active) */}
       {challengeStarted && (
-        <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-b border-blue-500/30 px-4 py-2">
+        <div className="bg-linear-to-r from-blue-900/20 to-indigo-900/20 border-b border-blue-500/30 px-4 py-2">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               <Shield className="w-4 h-4 text-blue-400" />
@@ -185,7 +193,7 @@ export default function MainLayout() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
                 <Code className="w-6 h-6 text-white" />
               </div>
               <div>

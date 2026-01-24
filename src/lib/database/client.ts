@@ -92,10 +92,6 @@ export const db = {
     const sql = createSqlClient();
     if (!sql) return;
     
-    const setClause = Object.entries(updates)
-      .map(([key, value]) => `${key} = ${value}`)
-      .join(', ');
-    
     await sql`
       UPDATE test_sessions 
       SET security_score = ${updates.security_score || 0},

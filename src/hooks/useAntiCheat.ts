@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useChallengeStore } from '@/store/challengeStore';
 
 export interface AntiCheatViolation {
@@ -38,13 +38,21 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
   const settings = { ...defaultConfig, ...config };
   const { challengeStarted, addConsoleOutput } = useChallengeStore();
   
-  const violationsRef = useRef<AntiCheatViolation[]>([]);
-  const tabSwitchCountRef = useRef(0);
-  const lastActivityRef = useRef(Date.now());
+  // Use state for values that need to trigger re-renders
+  const [violations, setViolations] = useState<AntiCheatViolation[]>([]);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  
+  // Use refs for values that don't need to trigger re-renders
+  const lastActivityRef = useRef<number | null>(null);
   const devToolsOpenRef = useRef(false);
 
+  // Initialize lastActivityRef on mount
+  useEffect(() => {
+    lastActivityRef.current = Date.now();
+  }, []);
+
   const logViolation = useCallback((violation: AntiCheatViolation) => {
-    violationsRef.current.push(violation);
+    setViolations(prev => [...prev, violation]);
     
     const severityEmoji = {
       low: '⚠️',
@@ -63,8 +71,6 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
       // Could send to API here
       console.warn('[Anti-Cheat]', violation);
     }
-
-    return violationsRef.current.length;
   }, [addConsoleOutput]);
 
   // Tab/Window Focus Detection
@@ -73,14 +79,15 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        tabSwitchCountRef.current++;
-        const count = tabSwitchCountRef.current;
-        
-        logViolation({
-          type: 'tab_switch',
-          severity: count >= settings.maxTabSwitches ? 'high' : 'medium',
-          timestamp: Date.now(),
-          details: `Tab switch detected (${count}/${settings.maxTabSwitches} allowed)`
+        setTabSwitchCount(prev => {
+          const newCount = prev + 1;
+          logViolation({
+            type: 'tab_switch',
+            severity: newCount >= settings.maxTabSwitches ? 'high' : 'medium',
+            timestamp: Date.now(),
+            details: `Tab switch detected (${newCount}/${settings.maxTabSwitches} allowed)`
+          });
+          return newCount;
         });
       }
     };
@@ -149,7 +156,6 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
     if (!challengeStarted || !settings.enableDevToolsDetection) return;
 
     const threshold = 160;
-    let checkInterval: NodeJS.Timeout;
 
     const detectDevTools = () => {
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
@@ -169,7 +175,7 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
     };
 
     // Check periodically
-    checkInterval = setInterval(detectDevTools, 1000);
+    const checkInterval = setInterval(detectDevTools, 1000);
 
     // Keyboard shortcut detection
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -258,6 +264,7 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
     };
 
     const checkIdle = () => {
+      if (lastActivityRef.current === null) return;
       const idleTime = Date.now() - lastActivityRef.current;
       if (idleTime > settings.idleTimeoutMs) {
         logViolation({
@@ -292,24 +299,24 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
 
   // Get current violation count
   const getViolations = useCallback(() => {
-    return violationsRef.current;
-  }, []);
+    return violations;
+  }, [violations]);
 
   const getViolationCount = useCallback(() => {
-    return violationsRef.current.length;
-  }, []);
+    return violations.length;
+  }, [violations]);
 
   const getCriticalViolations = useCallback(() => {
-    return violationsRef.current.filter(v => v.severity === 'critical' || v.severity === 'high');
-  }, []);
+    return violations.filter(v => v.severity === 'critical' || v.severity === 'high');
+  }, [violations]);
 
   return {
-    violations: violationsRef.current,
+    violations,
     getViolations,
     getViolationCount,
     getCriticalViolations,
     requestFullScreen,
-    tabSwitchCount: tabSwitchCountRef.current,
+    tabSwitchCount,
     isExamMode: challengeStarted
   };
 }

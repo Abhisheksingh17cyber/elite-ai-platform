@@ -14,13 +14,11 @@ import {
   Filter,
   MoreVertical,
   Play,
-  Pause,
   Ban,
   Flag,
   RefreshCw,
   Monitor,
   Code,
-  ChevronRight,
   CheckCircle,
   XCircle,
   Zap,
@@ -93,6 +91,57 @@ const mockStats = {
   anti_cheat_flags: 12
 };
 
+// StatCard Component - moved outside to prevent recreation during render
+function StatCard({ 
+  icon: Icon, 
+  label, 
+  value, 
+  subtext, 
+  trend,
+  color = 'blue'
+}: { 
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string | number;
+  subtext?: string;
+  trend?: 'up' | 'down';
+  color?: string;
+}) {
+  const colorClasses: Record<string, { bg: string; text: string }> = {
+    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
+    green: { bg: 'bg-green-500/10', text: 'text-green-400' },
+    purple: { bg: 'bg-purple-500/10', text: 'text-purple-400' },
+    red: { bg: 'bg-red-500/10', text: 'text-red-400' },
+  };
+  
+  const colors = colorClasses[color] || colorClasses.blue;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#12121a] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-all"
+    >
+      <div className="flex items-start justify-between">
+        <div className={`p-3 rounded-lg ${colors.bg}`}>
+          <Icon className={`w-6 h-6 ${colors.text}`} />
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+            <TrendingUp className={`w-4 h-4 ${trend === 'down' ? 'rotate-180' : ''}`} />
+            <span>{trend === 'up' ? '+2.5%' : '-1.2%'}</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-4">
+        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-3xl font-bold text-white mt-1">{value}</p>
+        {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function AdminDashboard() {
   const {
     isAuthenticated,
@@ -111,19 +160,17 @@ export default function AdminDashboard() {
     flagSession
   } = useAdminStore();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [showActions, setShowActions] = useState<string | null>(null);
 
   // Load mock data
   useEffect(() => {
-    setIsLoading(true);
     // Simulate API call
-    setTimeout(() => {
+    const loadData = setTimeout(() => {
       setLiveMonitoringData(mockLiveData);
       setStatistics(mockStats);
-      setIsLoading(false);
     }, 1000);
+
+    return () => clearTimeout(loadData);
 
     // Auto-refresh every 5 seconds
     const interval = setInterval(() => {
@@ -161,45 +208,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const StatCard = ({ 
-    icon: Icon, 
-    label, 
-    value, 
-    subtext, 
-    trend,
-    color = 'blue'
-  }: { 
-    icon: React.ComponentType<{ className?: string }>;
-    label: string;
-    value: string | number;
-    subtext?: string;
-    trend?: 'up' | 'down';
-    color?: string;
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#12121a] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-all"
-    >
-      <div className="flex items-start justify-between">
-        <div className={`p-3 rounded-lg bg-${color}-500/10`}>
-          <Icon className={`w-6 h-6 text-${color}-400`} />
-        </div>
-        {trend && (
-          <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-            <TrendingUp className={`w-4 h-4 ${trend === 'down' ? 'rotate-180' : ''}`} />
-            <span>{trend === 'up' ? '+2.5%' : '-1.2%'}</span>
-          </div>
-        )}
-      </div>
-      <div className="mt-4">
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className="text-3xl font-bold text-white mt-1">{value}</p>
-        {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
-      </div>
-    </motion.div>
-  );
-
   if (!isAuthenticated) {
     return null; // Will redirect to login
   }
@@ -208,10 +216,10 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#0a0a0f] text-white">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-[#27272a]">
-        <div className="max-w-[1920px] mx-auto px-6 py-4">
+        <div className="max-w-screen-2xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -248,7 +256,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="max-w-[1920px] mx-auto px-6 py-8">
+      <main className="max-w-screen-2xl mx-auto px-6 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard 
@@ -355,7 +363,7 @@ export default function AdminDashboard() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-linear-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
                           <span className="text-sm font-medium">
                             {candidate.candidate_name.split(' ').map(n => n[0]).join('')}
                           </span>

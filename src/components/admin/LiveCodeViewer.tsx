@@ -32,23 +32,12 @@ interface LiveViewerProps {
 }
 
 export default function LiveCodeViewer({ 
-  candidateId, 
   candidateName, 
   sessionId, 
   onClose 
 }: LiveViewerProps) {
-  const [currentCode, setCurrentCode] = useState<string>('');
-  const [snapshots, setSnapshots] = useState<CodeSnapshot[]>([]);
-  const [currentSnapshotIndex, setCurrentSnapshotIndex] = useState(0);
-  const [isLive, setIsLive] = useState(true);
-  const [antiCheatEvents, setAntiCheatEvents] = useState<Array<{ type: string; timestamp: Date; severity: string }>>([]);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const codeRef = useRef<HTMLPreElement>(null);
-  
-  // Simulate real-time code updates
-  useEffect(() => {
-    // Mock initial code
-    const mockCode = `// Elite AI Challenge - ${candidateName}
+  // Generate initial mock code
+  const initialCode = `// Elite AI Challenge - ${candidateName}
 // Session: ${sessionId}
 
 function solveProblem(input: number[]): number {
@@ -65,9 +54,17 @@ function solveProblem(input: number[]): number {
 // Test cases
 console.log(solveProblem([1, 2, 3, 4, 5])); // Expected: 15
 `;
-    
-    setCurrentCode(mockCode);
-    
+  
+  const [currentCode, setCurrentCode] = useState<string>(initialCode);
+  const [snapshots, setSnapshots] = useState<CodeSnapshot[]>([]);
+  const [currentSnapshotIndex, setCurrentSnapshotIndex] = useState(0);
+  const [isLive, setIsLive] = useState(true);
+  const [antiCheatEvents, setAntiCheatEvents] = useState<Array<{ type: string; timestamp: Date; severity: string }>>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const codeRef = useRef<HTMLPreElement>(null);
+  
+  // Simulate real-time code updates
+  useEffect(() => {
     // Simulate code updates
     const updateInterval = setInterval(() => {
       if (isLive) {
@@ -165,7 +162,7 @@ console.log(solveProblem([1, 2, 3, 4, 5])); // Expected: 15
           <div className="flex items-center justify-between p-4 bg-[#12121a] border-b border-[#27272a]">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
                   <Eye className="w-5 h-5 text-white" />
                 </div>
                 <div>

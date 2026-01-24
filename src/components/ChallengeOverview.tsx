@@ -47,12 +47,12 @@ export default function ChallengeOverview() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 text-white p-8 rounded-2xl overflow-hidden border border-blue-500/30"
+        className="relative bg-linear-to-r from-blue-900 via-indigo-800 to-blue-900 text-white p-8 rounded-2xl overflow-hidden border border-blue-500/30"
       >
         {/* Animated background */}
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent"
           animate={{ x: ['-100%', '100%'] }}
           transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
         />
@@ -111,7 +111,7 @@ export default function ChallengeOverview() {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-[#12121a] border-l-4 border-amber-500 p-6 rounded-r-xl border border-[#27272a]"
+        className="bg-[#12121a] border-l-4 border-l-amber-500 p-6 rounded-r-xl border border-[#27272a]"
       >
         <h3 className="font-bold text-amber-400 text-xl mb-4 flex items-center gap-2">
           <AlertTriangle className="w-6 h-6" />
@@ -224,10 +224,10 @@ export default function ChallengeOverview() {
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
             onClick={startChallenge}
-            className="relative w-full bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 text-white py-5 rounded-xl font-bold text-xl overflow-hidden group border border-blue-500/30"
+            className="relative w-full bg-linear-to-r from-blue-700 via-blue-600 to-blue-700 text-white py-5 rounded-xl font-bold text-xl overflow-hidden group border border-blue-500/30"
           >
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent"
               animate={{ x: isHovered ? ['0%', '200%'] : '0%' }}
               transition={{ duration: 0.8 }}
             />
