@@ -28,7 +28,7 @@ export async function GET() {
         ts.started_at,
         c.email,
         c.name,
-        (SELECT code FROM code_snapshots WHERE session_id = ts.id ORDER BY timestamp DESC LIMIT 1) as current_code,
+        (SELECT active_file FROM code_snapshots WHERE session_id = ts.id ORDER BY timestamp DESC LIMIT 1) as current_code,
         (SELECT COUNT(*) FROM anti_cheat_events WHERE session_id = ts.id) as violation_count
       FROM test_sessions ts
       JOIN candidates c ON ts.candidate_id = c.id

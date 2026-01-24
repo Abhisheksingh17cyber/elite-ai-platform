@@ -97,8 +97,7 @@ export async function PATCH(
           architecture_score = COALESCE(${architecture_score ?? null}, architecture_score),
           performance_score = COALESCE(${performance_score ?? null}, performance_score),
           tests_passed = COALESCE(${tests_passed ?? null}, tests_passed),
-          ended_at = NOW(),
-          updated_at = NOW()
+          ended_at = NOW()
         WHERE id = ${id}
         RETURNING *
       `;
@@ -111,8 +110,7 @@ export async function PATCH(
           security_score = COALESCE(${security_score ?? null}, security_score),
           architecture_score = COALESCE(${architecture_score ?? null}, architecture_score),
           performance_score = COALESCE(${performance_score ?? null}, performance_score),
-          tests_passed = COALESCE(${tests_passed ?? null}, tests_passed),
-          updated_at = NOW()
+          tests_passed = COALESCE(${tests_passed ?? null}, tests_passed)
         WHERE id = ${id}
         RETURNING *
       `;
