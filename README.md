@@ -6,7 +6,7 @@ A comprehensive coding challenge platform designed for top-tier developers. This
 
 ### Candidate Features
 - 🎯 **Interactive Challenge Interface** - Timer, code editor, file explorer, and console
-- ⏱️ **120-Minute Timed Challenge** - Anti-cheat timer with urgency indicators
+- ⏱️ **45-Minute Timed Challenge** - Anti-cheat timer with urgency indicators
 - 🔐 **Security Trap Detection** - Automatically detects hardcoded API keys and SQL injection vulnerabilities
 - 📊 **Real-time Scoring** - Security, Architecture, and Performance metrics
 - 🎨 **Modern UI** - Framer Motion animations, Monaco Editor, and particle effects
@@ -71,11 +71,103 @@ Navigate to `/admin` to access the admin dashboard.
 1. Create an account at [neon.tech](https://neon.tech)
 2. Create a new project
 3. Copy your connection string
-4. Create `.env.local` from `.env.example`:
-   ```bash
-   cp .env.example .env.local
+4. Create `.env.local`:
    ```
-5. Add your Neon connection string to `DATABASE_URL`
+   DATABASE_URL=postgresql://username:password@host.neon.tech/dbname?sslmode=require
+   ```
+5. **Auto-setup:** Visit `http://localhost:3000/setup` after starting dev server
+
+   **OR Manual SQL:** Run this in Neon SQL Editor:
+
+```sql
+-- CANDIDATES TABLE
+CREATE TABLE IF NOT EXISTS candidates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    status VARCHAR(50) DEFAULT 'pending'
+);
+CREATE INDEX IF NOT EXISTS idx_candidates_email ON candidates(email);
+
+-- TEST SESSIONS TABLE
+CREATE TABLE IF NOT EXISTS test_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    candidate_id UUID REFERENCES candidates(id) ON DELETE CASCADE,
+    challenge_id VARCHAR(100) DEFAULT 'default',
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    ended_at TIMESTAMP WITH TIME ZONE,
+    time_remaining INTEGER DEFAULT 2700,
+    status VARCHAR(50) DEFAULT 'in_progress',
+    final_score DECIMAL(5,2),
+    security_score DECIMAL(5,2) DEFAULT 0,
+    architecture_score DECIMAL(5,2) DEFAULT 0,
+    performance_score DECIMAL(5,2) DEFAULT 0,
+    tests_passed INTEGER DEFAULT 0,
+    total_tests INTEGER DEFAULT 24,
+    current_file VARCHAR(255) DEFAULT 'main.py',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_candidate ON test_sessions(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_status ON test_sessions(status);
+
+-- CODE SNAPSHOTS TABLE
+CREATE TABLE IF NOT EXISTS code_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES test_sessions(id) ON DELETE CASCADE,
+    code TEXT NOT NULL,
+    language VARCHAR(50) DEFAULT 'python',
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_snapshots_session ON code_snapshots(session_id);
+
+-- ANTI-CHEAT EVENTS TABLE
+CREATE TABLE IF NOT EXISTS anti_cheat_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES test_sessions(id) ON DELETE CASCADE,
+    event_type VARCHAR(100) NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    details TEXT,
+    metadata JSONB DEFAULT '{}',
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_anticheat_session ON anti_cheat_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_anticheat_severity ON anti_cheat_events(severity);
+
+-- ADMIN USERS TABLE
+CREATE TABLE IF NOT EXISTS admin_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'admin',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_login TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX IF NOT EXISTS idx_admin_email ON admin_users(email);
+
+-- INSERT DEFAULT ADMIN (password: admin123)
+INSERT INTO admin_users (email, password_hash, name, role)
+VALUES (
+    'admin@elitechallenge.com',
+    '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
+    'Administrator',
+    'super_admin'
+) ON CONFLICT (email) DO NOTHING;
+```
+
+### API Routes
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/db/init` | POST | Initialize database |
+| `/api/candidates` | GET/POST | Manage candidates |
+| `/api/sessions` | GET/POST | Test sessions |
+| `/api/sessions/[id]` | GET/PATCH | Session details |
+| `/api/sessions/[id]/code` | GET/POST | Code snapshots |
+| `/api/sessions/[id]/anticheat` | GET/POST | Violations |
+| `/api/admin/auth` | GET/POST | Admin login |
+| `/api/admin/monitoring` | GET | Live data |
 
 ### Build for Production
 

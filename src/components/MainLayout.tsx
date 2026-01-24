@@ -15,6 +15,7 @@ import {
 import { useChallengeStore } from '@/store/challengeStore';
 import { cn } from '@/lib/utils';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
+import { useDatabaseSync } from '@/hooks/useDatabaseSync';
 
 import Timer from './Timer';
 import ChallengeOverview from './ChallengeOverview';
@@ -28,11 +29,20 @@ import EvaluationFramework from './EvaluationFramework';
 
 type TabType = 'overview' | 'coding' | 'evaluation';
 
-const tabs: { id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'coding', label: 'Coding Environment', icon: Code },
-  { id: 'evaluation', label: 'Evaluation', icon: ClipboardCheck },
-];
+// Define tabs - evaluation only visible before challenge starts (for admins only later)
+const getVisibleTabs = (challengeStarted: boolean) => {
+  const allTabs: { id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'coding', label: 'Coding Environment', icon: Code },
+  ];
+  
+  // Only show evaluation tab before challenge starts (candidates shouldn't see scores during test)
+  if (!challengeStarted) {
+    allTabs.push({ id: 'evaluation', label: 'Evaluation', icon: ClipboardCheck });
+  }
+  
+  return allTabs;
+};
 
 export default function MainLayout() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -40,7 +50,10 @@ export default function MainLayout() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { challengeStarted } = useChallengeStore();
+  const { challengeStarted, sessionId } = useChallengeStore();
+  
+  // Database sync - syncs code and session data to Neon database
+  useDatabaseSync();
 
   // Anti-cheat system - only active when challenge is started
   const { violations, tabSwitchCount, requestFullScreen } = useAntiCheat({
@@ -50,6 +63,7 @@ export default function MainLayout() {
     enableRightClickBlock: challengeStarted,
     enableScreenshotDetection: challengeStarted,
     enableIdleDetection: challengeStarted,
+    sessionId: sessionId || undefined, // Pass session ID for database logging
   });
   
   const warningsRemaining = 5 - Math.min(5, violations.length);
@@ -204,7 +218,7 @@ export default function MainLayout() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-2">
-              {tabs.map((tab) => (
+              {getVisibleTabs(challengeStarted).map((tab) => (
                 <motion.button
                   key={tab.id}
                   whileHover={{ scale: 1.02 }}
@@ -257,7 +271,7 @@ export default function MainLayout() {
               className="md:hidden border-t border-[#27272a] overflow-hidden"
             >
               <div className="p-4 space-y-2">
-                {tabs.map((tab) => (
+                {getVisibleTabs(challengeStarted).map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => {
@@ -305,8 +319,8 @@ export default function MainLayout() {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              {/* Action Buttons */}
-              <ActionButtons />
+              {/* Action Buttons - Hidden during active challenge */}
+              {!challengeStarted && <ActionButtons />}
 
               {/* Main Coding Area */}
               <div className="grid grid-cols-12 gap-4">
@@ -315,38 +329,52 @@ export default function MainLayout() {
                   <FileExplorer />
                 </div>
 
-                {/* Code Editor */}
-                <div className="col-span-12 md:col-span-7">
+                {/* Code Editor - Full width during challenge */}
+                <div className={cn(
+                  "col-span-12",
+                  challengeStarted ? "md:col-span-10" : "md:col-span-7"
+                )}>
                   <CodeEditor height="600px" />
                 </div>
 
-                {/* Side Panel */}
-                <div className="col-span-12 md:col-span-3 space-y-4">
-                  <ScorePanel />
-                  <Console />
-                </div>
+                {/* Side Panel - Hidden during active challenge to prevent candidates seeing scores */}
+                {!challengeStarted && (
+                  <div className="col-span-12 md:col-span-3 space-y-4">
+                    <ScorePanel />
+                    <Console />
+                  </div>
+                )}
               </div>
 
-              {/* Requirements */}
-              <Requirements />
+              {/* Console during challenge - just the console, no scores */}
+              {challengeStarted && (
+                <div className="max-w-2xl">
+                  <Console />
+                </div>
+              )}
 
-              {/* Pro Tip */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-r-xl"
-              >
-                <p className="font-bold text-blue-400 mb-2">💡 Pro Tip: GitHub Classroom Integration</p>
-                <p className="text-sm text-blue-200/80">
-                  Click &quot;GitHub Classroom&quot; to get a pre-configured environment with Docker, Terraform, 
-                  and all dependencies. Your commits are automatically evaluated in real-time.
-                </p>
-              </motion.div>
+              {/* Requirements - Hidden during challenge */}
+              {!challengeStarted && <Requirements />}
+
+              {/* Pro Tip - Hidden during challenge */}
+              {!challengeStarted && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-r-xl"
+                >
+                  <p className="font-bold text-blue-400 mb-2">💡 Pro Tip: GitHub Classroom Integration</p>
+                  <p className="text-sm text-blue-200/80">
+                    Click &quot;GitHub Classroom&quot; to get a pre-configured environment with Docker, Terraform, 
+                    and all dependencies. Your commits are automatically evaluated in real-time.
+                  </p>
+                </motion.div>
+              )}
             </motion.div>
           )}
 
-          {activeTab === 'evaluation' && (
+          {activeTab === 'evaluation' && !challengeStarted && (
             <motion.div
               key="evaluation"
               initial={{ opacity: 0, y: 20 }}

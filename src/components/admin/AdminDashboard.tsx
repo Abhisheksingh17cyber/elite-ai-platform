@@ -161,26 +161,68 @@ export default function AdminDashboard() {
   } = useAdminStore();
 
   const [showActions, setShowActions] = useState<string | null>(null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
-  // Load mock data
+  // Fetch live data from database
   useEffect(() => {
-    // Simulate API call
-    const loadData = setTimeout(() => {
-      setLiveMonitoringData(mockLiveData);
-      setStatistics(mockStats);
-    }, 1000);
+    const fetchData = async () => {
+      try {
+        setIsDataLoading(true);
+        const response = await fetch('/api/admin/monitoring');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform API data to LiveMonitoringData format
+          const monitoringData: LiveMonitoringData[] = data.data.candidates.map((c: {
+            sessionId: string;
+            name: string;
+            email: string;
+            currentCode: string;
+            timeRemaining: number;
+            violations: number;
+            scores: { security: number; architecture: number; performance: number };
+          }) => ({
+            session_id: c.sessionId,
+            candidate_name: c.name,
+            candidate_email: c.email,
+            current_file: 'main.py',
+            time_remaining: c.timeRemaining,
+            current_score: Math.round((c.scores.security + c.scores.architecture + c.scores.performance) / 3),
+            anti_cheat_warnings: c.violations,
+            status: c.violations > 3 ? 'suspicious' : 'active',
+            last_activity: new Date(),
+            code_changes_count: 0
+          }));
+          
+          setLiveMonitoringData(monitoringData);
+          setStatistics({
+            total_candidates: data.data.statistics.activeTests + data.data.statistics.completedToday,
+            active_sessions: data.data.statistics.activeTests,
+            completed_sessions: data.data.statistics.completedToday,
+            average_score: data.data.statistics.averageScore,
+            pass_rate: 0,
+            average_completion_time: 0,
+            anti_cheat_flags: data.data.statistics.criticalViolations
+          });
+        } else {
+          // Fall back to mock data if API fails
+          setLiveMonitoringData(mockLiveData);
+          setStatistics(mockStats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch monitoring data:', error);
+        // Fall back to mock data
+        setLiveMonitoringData(mockLiveData);
+        setStatistics(mockStats);
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
 
-    return () => clearTimeout(loadData);
-
-    // Auto-refresh every 5 seconds
-    const interval = setInterval(() => {
-      setLiveMonitoringData(mockLiveData.map(d => ({
-        ...d,
-        time_remaining: Math.max(0, d.time_remaining - 5),
-        code_changes_count: d.code_changes_count + Math.floor(Math.random() * 3)
-      })));
-    }, 5000);
-
+    fetchData();
+    
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [setLiveMonitoringData, setStatistics]);
 
@@ -210,6 +252,17 @@ export default function AdminDashboard() {
 
   if (!isAuthenticated) {
     return null; // Will redirect to login
+  }
+
+  if (isDataLoading && liveMonitoringData.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-400 text-lg">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

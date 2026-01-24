@@ -51,7 +51,7 @@ export interface ChallengeState {
   resetChallenge: () => void;
 }
 
-const CHALLENGE_DURATION = 120 * 60; // 120 minutes in seconds
+const CHALLENGE_DURATION = 45 * 60; // 45 minutes in seconds
 
 const initialFiles: Record<string, string> = {
   'main.py': `# Elite Challenge - Distributed AI System with Multi-Region Failover

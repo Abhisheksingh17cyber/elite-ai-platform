@@ -20,6 +20,7 @@ interface AntiCheatConfig {
   idleTimeoutMs: number;
   maxTabSwitches: number;
   maxWarnings: number;
+  sessionId?: string; // Optional session ID for database logging
 }
 
 const defaultConfig: AntiCheatConfig = {
@@ -33,6 +34,24 @@ const defaultConfig: AntiCheatConfig = {
   maxTabSwitches: 3,
   maxWarnings: 5
 };
+
+// Function to log violation to database
+async function logViolationToDatabase(sessionId: string, violation: AntiCheatViolation) {
+  try {
+    await fetch(`/api/sessions/${sessionId}/anticheat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType: violation.type,
+        severity: violation.severity,
+        details: violation.details,
+        metadata: { timestamp: violation.timestamp }
+      })
+    });
+  } catch (error) {
+    console.error('Failed to log violation to database:', error);
+  }
+}
 
 export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
   const settings = { ...defaultConfig, ...config };
@@ -66,12 +85,16 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
       `${severityEmoji[violation.severity]} Anti-Cheat: ${violation.details}`
     );
 
-    // Send to server for logging
+    // Log to database if session ID is provided
+    if (settings.sessionId) {
+      logViolationToDatabase(settings.sessionId, violation);
+    }
+
+    // Also log to console
     if (typeof window !== 'undefined') {
-      // Could send to API here
       console.warn('[Anti-Cheat]', violation);
     }
-  }, [addConsoleOutput]);
+  }, [addConsoleOutput, settings.sessionId]);
 
   // Tab/Window Focus Detection
   useEffect(() => {

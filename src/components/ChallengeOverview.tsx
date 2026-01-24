@@ -16,14 +16,23 @@ import {
   XCircle,
   CheckCircle,
   Sparkles,
-  Rocket
+  Rocket,
+  User,
+  Mail,
+  Loader2
 } from 'lucide-react';
 import { useChallengeStore } from '@/store/challengeStore';
+import { registerCandidate } from '@/lib/database/service';
 import Typewriter from 'typewriter-effect';
 
 export default function ChallengeOverview() {
-  const { startChallenge, challengeStarted } = useChallengeStore();
+  const { startChallenge, challengeStarted, setSession, candidateEmail } = useChallengeStore();
   const [isHovered, setIsHovered] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const extremeFeatures = [
     { icon: Brain, title: 'Multi-Dimensional Problem Space', desc: 'Optimize for: latency, cost, security, compliance, scalability - simultaneously' },
@@ -39,6 +48,49 @@ export default function ChallengeOverview() {
     { icon: XCircle, title: 'Missing security mindset', desc: 'Focusing on performance while leaving admin panels exposed', type: 'fail' },
     { icon: CheckCircle, title: 'Top 1% approach', desc: 'Question requirements, propose alternatives, show tradeoffs with data', type: 'success' },
   ];
+
+  const handleStartClick = () => {
+    // If already registered (has session), start directly
+    if (candidateEmail) {
+      startChallenge();
+    } else {
+      setShowRegistration(true);
+    }
+  };
+
+  const handleRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const sessionData = await registerCandidate(email.trim(), name.trim());
+      
+      if (sessionData) {
+        setSession(sessionData.sessionId, sessionData.name, sessionData.email);
+        setShowRegistration(false);
+        startChallenge();
+      } else {
+        setError('Failed to register. Please try again.');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+      console.error('Registration error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -86,7 +138,7 @@ export default function ChallengeOverview() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { icon: Clock, text: '120 Minutes' },
+              { icon: Clock, text: '45 Minutes' },
               { icon: Globe, text: 'Multi-Region' },
               { icon: Shield, text: 'Production-Grade' },
               { icon: Skull, text: '5% Pass Rate' },
@@ -223,7 +275,7 @@ export default function ChallengeOverview() {
             whileTap={{ scale: 0.98 }}
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
-            onClick={startChallenge}
+            onClick={handleStartClick}
             className="relative w-full bg-linear-to-r from-blue-700 via-blue-600 to-blue-700 text-white py-5 rounded-xl font-bold text-xl overflow-hidden group border border-blue-500/30"
           >
             <motion.div
@@ -237,6 +289,104 @@ export default function ChallengeOverview() {
               <Flame className="w-6 h-6" />
             </span>
           </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Registration Modal */}
+      <AnimatePresence>
+        {showRegistration && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#12121a] border border-[#27272a] rounded-2xl p-8 max-w-md w-full"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-blue-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Register to Begin</h2>
+                <p className="text-gray-400 mt-2">Enter your details to start the challenge</p>
+              </div>
+
+              <form onSubmit={handleRegistration} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Enter your full name"
+                      className="w-full bg-[#0a0a0f] border border-[#27272a] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full bg-[#0a0a0f] border border-[#27272a] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegistration(false)}
+                    className="flex-1 py-3 bg-[#27272a] hover:bg-[#3f3f46] text-white rounded-xl font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Registering...
+                      </>
+                    ) : (
+                      <>
+                        <Rocket className="w-5 h-5" />
+                        Start Challenge
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              <p className="text-xs text-gray-500 text-center mt-4">
+                Your session will be monitored for security purposes
+              </p>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
