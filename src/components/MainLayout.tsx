@@ -36,8 +36,12 @@ export default function MainLayout() {
   const [isHydrated, setIsHydrated] = useState(false);
   const { challengeStarted } = useChallengeStore();
 
+  // Use requestAnimationFrame to defer hydration state update
   useEffect(() => {
-    setIsHydrated(true);
+    const frame = requestAnimationFrame(() => {
+      setIsHydrated(true);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   if (!isHydrated) {
