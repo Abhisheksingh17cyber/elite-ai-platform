@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
+import CursorWrapper from "@/components/CursorWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,12 +28,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0A0A0F]`}
+        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#080b12]`}
       >
         <AuthProvider>
+          <CursorWrapper />
           {children}
         </AuthProvider>
       </body>
     </html>
   );
 }
+

@@ -8,4 +8,3 @@ export { default as Requirements } from './Requirements';
 export { default as ChallengeOverview } from './ChallengeOverview';
 export { default as EvaluationFramework } from './EvaluationFramework';
 export { default as MainLayout } from './MainLayout';
-export { default as ParticleBackground } from './ParticleBackground';

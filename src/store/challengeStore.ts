@@ -6,19 +6,19 @@ export interface ChallengeState {
   sessionId: string | null;
   candidateName: string;
   candidateEmail: string;
-  
+
   // Challenge State
   challengeStarted: boolean;
   challengeCompleted: boolean;
   startTime: number | null;
   endTime: number | null;
   timeRemaining: number;
-  
+
   // Code State
   code: string;
   activeFile: string;
   files: Record<string, string>;
-  
+
   // Scores
   securityScore: number;
   architectureScore: number;
@@ -26,14 +26,14 @@ export interface ChallengeState {
   totalScore: number;
   testsPassed: number;
   totalTests: number;
-  
+
   // Console
   consoleOutput: Array<{ type: 'info' | 'warning' | 'error' | 'success'; text: string; timestamp: number }>;
-  
+
   // Trap Detection
   trapDetected: boolean;
   vulnerabilitiesFound: string[];
-  
+
   // Actions
   setSession: (sessionId: string, name: string, email: string) => void;
   startChallenge: () => void;
@@ -49,6 +49,7 @@ export interface ChallengeState {
   setTrapDetected: (detected: boolean) => void;
   addVulnerability: (vulnerability: string) => void;
   resetChallenge: () => void;
+  clearSession: () => void;
 }
 
 const CHALLENGE_DURATION = 45 * 60; // 45 minutes in seconds
@@ -462,6 +463,28 @@ export const useChallengeStore = create<ChallengeState>()(
       })),
 
       resetChallenge: () => set({
+        challengeStarted: false,
+        challengeCompleted: false,
+        startTime: null,
+        endTime: null,
+        timeRemaining: CHALLENGE_DURATION,
+        code: initialFiles['main.py'],
+        activeFile: 'main.py',
+        files: initialFiles,
+        securityScore: 0,
+        architectureScore: 0,
+        performanceScore: 0,
+        totalScore: 0,
+        testsPassed: 0,
+        consoleOutput: [],
+        trapDetected: false,
+        vulnerabilitiesFound: []
+      }),
+
+      clearSession: () => set({
+        sessionId: null,
+        candidateName: '',
+        candidateEmail: '',
         challengeStarted: false,
         challengeCompleted: false,
         startTime: null,

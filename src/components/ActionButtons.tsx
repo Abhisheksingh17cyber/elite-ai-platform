@@ -1,20 +1,24 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  Play, 
-  TestTube, 
-  Shield, 
+import {
+  Play,
+  Square,
+  TestTube,
+  Shield,
   Upload,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  Zap
 } from 'lucide-react';
 import { useChallengeStore } from '@/store/challengeStore';
 import { detectApiKeyTrap, detectSqlInjection, checkArchitecture } from '@/lib/utils';
 
 export default function ActionButtons() {
-  const { 
+  const router = useRouter();
+  const {
     files,
     sessionId,
     challengeStarted,
@@ -24,6 +28,7 @@ export default function ActionButtons() {
     setTrapDetected,
     addVulnerability,
     endChallenge,
+    clearSession,
     securityScore,
     architectureScore,
     performanceScore
@@ -31,14 +36,17 @@ export default function ActionButtons() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
   const runCode = () => {
+    if (isRunning) return;
+    setIsRunning(true);
     addConsoleOutput('info', '▶ Running code...');
-    
+
     setTimeout(() => {
       addConsoleOutput('info', '📦 Building project...');
     }, 500);
-    
+
     setTimeout(() => {
       addConsoleOutput('success', '✓ Build successful');
       addConsoleOutput('info', '🔍 Starting security scan...');
@@ -47,7 +55,7 @@ export default function ActionButtons() {
     setTimeout(() => {
       // Check all files for vulnerabilities
       const allCode = Object.values(files).join('\n');
-      
+
       const trapResult = detectApiKeyTrap(allCode);
       if (!trapResult.passed) {
         addConsoleOutput('error', trapResult.message);
@@ -64,15 +72,20 @@ export default function ActionButtons() {
       }
 
       const archResult = checkArchitecture(allCode);
-      archResult.feedback.forEach(fb => {
-        addConsoleOutput(fb.startsWith('✅') ? 'success' : 'warning', fb);
-      });
+      updateScores(Math.min(securityScore, 100), 0, 0);
+      setIsRunning(false);
     }, 2500);
+  };
+
+  const stopCode = () => {
+    if (!isRunning) return;
+    setIsRunning(false);
+    addConsoleOutput('warning', '⏹ Execution stopped by user');
   };
 
   const runTests = () => {
     addConsoleOutput('info', '🧪 Running test suite (24 tests)...');
-    
+
     const allCode = Object.values(files).join('\n');
     let passed = 0;
     const total = 24;
@@ -103,13 +116,13 @@ export default function ActionButtons() {
 
   const runSecurityScan = () => {
     addConsoleOutput('info', '🔐 Running deep security scan...');
-    
+
     const allCode = Object.values(files).join('\n');
 
     setTimeout(() => {
       const trapResult = detectApiKeyTrap(allCode);
       const sqlResult = detectSqlInjection(allCode);
-      
+
       let securityScore = 50;
 
       if (trapResult.passed) {
@@ -150,49 +163,49 @@ export default function ActionButtons() {
 
   const submitCode = async () => {
     if (isSubmitting || isSubmitted) return;
-    
+
     setIsSubmitting(true);
     addConsoleOutput('info', '📤 Preparing submission...');
-    
+
     try {
       const allCode = Object.values(files).join('\n');
       const trapResult = detectApiKeyTrap(allCode);
-      
+
       // Calculate final scores
       const sqlResult = detectSqlInjection(allCode);
       const archResult = checkArchitecture(allCode);
-      
+
       let finalSecurityScore = securityScore;
       let finalArchScore = architectureScore;
       const finalPerfScore = performanceScore;
-      
+
       // Update scores if not calculated yet
       if (finalSecurityScore === 0) {
         finalSecurityScore = trapResult.passed ? 50 : 0;
         finalSecurityScore += sqlResult.passed ? 30 : 0;
         finalSecurityScore = Math.min(finalSecurityScore, 100);
       }
-      
+
       if (finalArchScore === 0) {
         finalArchScore = archResult.score;
       }
-      
+
       const totalScore = (finalSecurityScore + finalArchScore + finalPerfScore) / 3;
 
       // Submit to database
       if (sessionId) {
         addConsoleOutput('info', '🚀 Submitting to server...');
-        
+
         // Save final code snapshot
         await fetch(`/api/sessions/${sessionId}/code`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            code: JSON.stringify(files), 
-            language: 'python' 
+          body: JSON.stringify({
+            code: JSON.stringify(files),
+            language: 'python'
           })
         });
-        
+
         // Update session with final scores and completed status
         const response = await fetch(`/api/sessions/${sessionId}`, {
           method: 'PATCH',
@@ -206,20 +219,27 @@ export default function ActionButtons() {
             time_remaining: 0
           })
         });
-        
+
         if (response.ok) {
           addConsoleOutput('success', '✅ Submission successful!');
           addConsoleOutput('info', `📊 Final Score: ${totalScore.toFixed(1)}/100`);
           addConsoleOutput('info', `   Security: ${finalSecurityScore}/100`);
           addConsoleOutput('info', `   Architecture: ${finalArchScore}/100`);
           addConsoleOutput('info', `   Performance: ${finalPerfScore}/100`);
-          
+
           if (!trapResult.passed) {
             addConsoleOutput('warning', '⚠️ Hardcoded secrets detected - this affects your security score');
           }
-          
+
           setIsSubmitted(true);
           endChallenge();
+
+          // Auto-logout after 3 seconds
+          addConsoleOutput('info', '🔄 Logging out in 3 seconds...');
+          setTimeout(() => {
+            clearSession();
+            router.push('/');
+          }, 3000);
         } else {
           addConsoleOutput('error', '❌ Submission failed. Please try again.');
         }
@@ -234,24 +254,48 @@ export default function ActionButtons() {
     }
   };
 
-  const buttonClass = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+  const buttonClass = "flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-wrap gap-3"
+      className="flex flex-wrap gap-4"
     >
+      {/* Run/Stop Button */}
+      {isRunning ? (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={stopCode}
+          disabled={!challengeStarted}
+          className={`${buttonClass} bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-amber-500/30`}
+        >
+          <Square className="w-4 h-4" />
+          Stop
+        </motion.button>
+      ) : (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={runCode}
+          disabled={!challengeStarted}
+          className={`${buttonClass} bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-emerald-500/30`}
+        >
+          <Play className="w-4 h-4" />
+          Run Code
+        </motion.button>
+      )}
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={runCode}
-        disabled={!challengeStarted}
-        className={`${buttonClass} bg-green-600 hover:bg-green-700 text-white`}
+        onClick={runTests}
+        disabled={!challengeStarted || isRunning}
+        className={`${buttonClass} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/30`}
       >
-        <Play className="w-4 h-4" />
-        Run Code
+        <TestTube className="w-4 h-4" />
+        Run Tests
       </motion.button>
 
       <motion.button
@@ -269,8 +313,8 @@ export default function ActionButtons() {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={runSecurityScan}
-        disabled={!challengeStarted}
-        className={`${buttonClass} bg-purple-600 hover:bg-purple-700 text-white`}
+        disabled={!challengeStarted || isRunning}
+        className={`${buttonClass} bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-violet-500/30`}
       >
         <Shield className="w-4 h-4" />
         Security Scan
@@ -280,8 +324,8 @@ export default function ActionButtons() {
         whileHover={{ scale: isSubmitted ? 1 : 1.02 }}
         whileTap={{ scale: isSubmitted ? 1 : 0.98 }}
         onClick={submitCode}
-        disabled={!challengeStarted || isSubmitting || isSubmitted}
-        className={`${buttonClass} ${isSubmitted ? 'bg-green-600' : 'bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'} text-white`}
+        disabled={!challengeStarted || isSubmitting || isSubmitted || isRunning}
+        className={`${buttonClass} ${isSubmitted ? 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-emerald-500/30' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-orange-500/30'} text-white`}
       >
         {isSubmitting ? (
           <>
@@ -295,7 +339,7 @@ export default function ActionButtons() {
           </>
         ) : (
           <>
-            <Upload className="w-4 h-4" />
+            <Zap className="w-4 h-4" />
             Submit
           </>
         )}

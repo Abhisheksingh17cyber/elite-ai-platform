@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  Code, 
+import {
+  LayoutDashboard,
+  Code,
   ClipboardCheck,
   Menu,
   X,
@@ -35,12 +35,12 @@ const getVisibleTabs = (challengeStarted: boolean) => {
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'coding', label: 'Coding Environment', icon: Code },
   ];
-  
+
   // Only show evaluation tab before challenge starts (candidates shouldn't see scores during test)
   if (!challengeStarted) {
     allTabs.push({ id: 'evaluation', label: 'Evaluation', icon: ClipboardCheck });
   }
-  
+
   return allTabs;
 };
 
@@ -52,7 +52,7 @@ export default function MainLayout() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTerminated, setIsTerminated] = useState(false);
   const { challengeStarted, sessionId, candidateEmail, timeRemaining, files, endChallenge, addConsoleOutput } = useChallengeStore();
-  
+
   // Database sync - syncs code and session data to Neon database
   useDatabaseSync();
 
@@ -66,12 +66,12 @@ export default function MainLayout() {
     enableIdleDetection: challengeStarted,
     sessionId: sessionId || undefined, // Pass session ID for database logging
   });
-  
+
   const warningsRemaining = 5 - Math.min(5, violations.length);
-  
+
   // Track previous violations count for comparison
   const prevViolationsCount = useRef(0);
-  
+
   // Track fullscreen state
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -98,7 +98,7 @@ export default function MainLayout() {
     if (challengeStarted && timeRemaining === 0 && sessionId && !isTerminated) {
       const autoSubmit = async () => {
         addConsoleOutput('warning', '⏰ Time is up! Auto-submitting your code...');
-        
+
         try {
           // Save final code
           await fetch(`/api/sessions/${sessionId}/code`, {
@@ -106,14 +106,14 @@ export default function MainLayout() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code: JSON.stringify(files), language: 'python' })
           });
-          
+
           // Mark session as completed
           await fetch(`/api/sessions/${sessionId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'completed', time_remaining: 0 })
           });
-          
+
           addConsoleOutput('success', '✅ Code auto-submitted successfully!');
           endChallenge();
         } catch (error) {
@@ -121,7 +121,7 @@ export default function MainLayout() {
           addConsoleOutput('error', '❌ Auto-submit failed');
         }
       };
-      
+
       autoSubmit();
     }
   }, [challengeStarted, timeRemaining, sessionId, files, endChallenge, addConsoleOutput, isTerminated]);
@@ -129,9 +129,9 @@ export default function MainLayout() {
   // Terminate test on critical cheating (5+ violations or 3+ tab switches)
   useEffect(() => {
     if (!challengeStarted || !sessionId || isTerminated) return;
-    
+
     const criticalViolations = violations.filter(v => v.severity === 'critical' || v.severity === 'high');
-    
+
     if (criticalViolations.length >= 3 || tabSwitchCount >= 3 || violations.length >= 5) {
       const terminateSession = async () => {
         setIsTerminated(true);
@@ -139,7 +139,7 @@ export default function MainLayout() {
         addConsoleOutput('error', `   Critical violations: ${criticalViolations.length}`);
         addConsoleOutput('error', `   Tab switches: ${tabSwitchCount}`);
         addConsoleOutput('error', `   Total violations: ${violations.length}`);
-        
+
         try {
           // Log termination event
           await fetch(`/api/sessions/${sessionId}/anticheat`, {
@@ -149,27 +149,27 @@ export default function MainLayout() {
               eventType: 'test_terminated',
               severity: 'critical',
               details: 'Test terminated due to multiple cheating violations',
-              metadata: { 
+              metadata: {
                 criticalViolations: criticalViolations.length,
                 tabSwitches: tabSwitchCount,
                 totalViolations: violations.length
               }
             })
           });
-          
+
           // Mark session as terminated
           await fetch(`/api/sessions/${sessionId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'terminated' })
           });
-          
+
           endChallenge();
         } catch (error) {
           console.error('Termination error:', error);
         }
       };
-      
+
       terminateSession();
     }
   }, [violations, tabSwitchCount, challengeStarted, sessionId, endChallenge, addConsoleOutput, isTerminated]);
@@ -195,7 +195,7 @@ export default function MainLayout() {
 
   return (
     <div className={cn(
-      "min-h-screen bg-[#0a0a0f] text-white",
+      "min-h-screen bg-[#080b12] text-white",
       challengeStarted && "exam-mode"
     )}>
       {/* Warning Modal */}
@@ -293,13 +293,13 @@ export default function MainLayout() {
 
       {/* Security Banner (when challenge is active) */}
       {challengeStarted && (
-        <div className="bg-linear-to-r from-blue-900/20 to-indigo-900/20 border-b border-blue-500/30 px-4 py-2">
+        <div className="bg-gradient-to-r from-[#0d1525] via-[#0f1729] to-[#0d1525] border-b border-[#4f8ff7]/20 px-4 py-2">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
-              <Shield className="w-4 h-4 text-blue-400" />
-              <span className="text-blue-300">Secure Exam Mode Active</span>
+              <Shield className="w-4 h-4 text-[#4f8ff7]" />
+              <span className="text-[#4f8ff7]/90 font-medium">Secure Exam Mode Active</span>
               {isFullscreen && (
-                <span className="px-2 py-0.5 bg-green-500/10 text-green-400 text-xs rounded-full">
+                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-xs rounded-full font-medium">
                   Fullscreen
                 </span>
               )}
@@ -310,7 +310,7 @@ export default function MainLayout() {
                 Monitored Session
               </span>
               {warningsRemaining < 5 && (
-                <span className="text-yellow-400">
+                <span className="text-amber-400 font-medium">
                   Warnings: {warningsRemaining}/5
                 </span>
               )}
@@ -320,7 +320,7 @@ export default function MainLayout() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-[#27272a]">
+      <header className="sticky top-0 z-50 bg-[#080b12]/95 backdrop-blur-xl border-b border-[#21262d]">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -329,7 +329,7 @@ export default function MainLayout() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#4f8ff7] to-[#2563eb] rounded-xl flex items-center justify-center shadow-lg shadow-[#4f8ff7]/20">
                 <Code className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -347,10 +347,10 @@ export default function MainLayout() {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200",
+                    "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-300",
                     activeTab === tab.id
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-400 hover:text-white hover:bg-[#1a1a24]"
+                      ? "bg-gradient-to-r from-[#4f8ff7] to-[#2563eb] text-white shadow-lg shadow-[#4f8ff7]/20"
+                      : "text-gray-400 hover:text-white hover:bg-[#151b26]"
                   )}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -488,7 +488,7 @@ export default function MainLayout() {
                 >
                   <p className="font-bold text-blue-400 mb-2">💡 Pro Tip: GitHub Classroom Integration</p>
                   <p className="text-sm text-blue-200/80">
-                    Click &quot;GitHub Classroom&quot; to get a pre-configured environment with Docker, Terraform, 
+                    Click &quot;GitHub Classroom&quot; to get a pre-configured environment with Docker, Terraform,
                     and all dependencies. Your commits are automatically evaluated in real-time.
                   </p>
                 </motion.div>
