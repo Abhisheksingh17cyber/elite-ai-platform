@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-interface CodeParticle {
+interface CodeLine {
     id: number;
     x: number;
     y: number;
-    vx: number;
-    vy: number;
+    speed: number;
     text: string;
     size: number;
     opacity: number;
@@ -35,30 +34,42 @@ const codeSnippets = [
     'socket.emit("update")',
     'redis.set(key, val)',
     'kafka.produce(msg)',
-    'docker run -d -p',
-    'kubectl apply -f',
-    'terraform init',
-    'git push origin',
-    'npm run build',
-    'yarn deploy',
+    'docker run -d -p 8080',
+    'kubectl apply -f pod',
+    'terraform init plan',
+    'git push origin main',
+    'npm run build --prod',
+    'yarn deploy staging',
     'SELECT * FROM users',
-    'INSERT INTO logs',
-    'CREATE TABLE IF',
-    'DROP INDEX idx',
+    'INSERT INTO sessions',
+    'CREATE TABLE IF NOT',
+    'DROP INDEX idx_cache',
+    'async validateToken()',
+    'private readonly db',
+    'public static main()',
+    'interface IChallenge',
+    'type UserSession = {}',
+    'enum AuthStatus {}',
+    'const [state, set] =',
+    'useCallback(() => {})',
+    'useMemo(() => data)',
+    'React.createElement()',
 ];
 
 const colors = [
-    '#ff6b35', // orange
-    '#f7931e', // amber
-    '#ff4757', // red
-    '#ffa502', // gold
-    '#ff7f50', // coral
-    '#e84118', // crimson
+    '#ff6b35', // bright orange
+    '#ff8c42', // lighter orange
+    '#ff5722', // deep orange
+    '#ff7043', // coral orange
+    '#ffa726', // amber
+    '#ffb74d', // light amber
+    '#f57c00', // dark orange
+    '#ef6c00', // burnt orange
 ];
 
 export default function CodeBackground() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const particlesRef = useRef<CodeParticle[]>([]);
+    const linesRef = useRef<CodeLine[]>([]);
     const mouseRef = useRef({ x: -1000, y: -1000 });
     const animationRef = useRef<number | undefined>(undefined);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -79,25 +90,28 @@ export default function CodeBackground() {
     useEffect(() => {
         if (dimensions.width === 0) return;
 
-        // Initialize particles
-        const particles: CodeParticle[] = [];
-        const particleCount = Math.floor((dimensions.width * dimensions.height) / 25000);
+        // Initialize code lines - vertical columns
+        const lines: CodeLine[] = [];
+        const columnCount = Math.floor(dimensions.width / 200); // One column every 200px
 
-        for (let i = 0; i < particleCount; i++) {
-            particles.push({
-                id: i,
-                x: Math.random() * dimensions.width,
-                y: Math.random() * dimensions.height,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: (Math.random() - 0.5) * 0.5,
-                text: codeSnippets[Math.floor(Math.random() * codeSnippets.length)],
-                size: 10 + Math.random() * 4,
-                opacity: 0.3 + Math.random() * 0.4,
-                color: colors[Math.floor(Math.random() * colors.length)],
-            });
+        for (let col = 0; col < columnCount; col++) {
+            // Multiple lines per column at different starting positions
+            const linesPerColumn = 8;
+            for (let i = 0; i < linesPerColumn; i++) {
+                lines.push({
+                    id: col * linesPerColumn + i,
+                    x: (col * (dimensions.width / columnCount)) + 20,
+                    y: (i * (dimensions.height / linesPerColumn)) - Math.random() * 200,
+                    speed: 1 + Math.random() * 2, // Varying speeds
+                    text: codeSnippets[Math.floor(Math.random() * codeSnippets.length)],
+                    size: 12 + Math.random() * 4,
+                    opacity: 0.6 + Math.random() * 0.4, // Higher opacity: 0.6-1.0
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                });
+            }
         }
 
-        particlesRef.current = particles;
+        linesRef.current = lines;
     }, [dimensions]);
 
     useEffect(() => {
@@ -121,44 +135,43 @@ export default function CodeBackground() {
         const animate = () => {
             ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
-            particlesRef.current.forEach((particle) => {
+            linesRef.current.forEach((line) => {
                 // Calculate distance from mouse
-                const dx = particle.x - mouseRef.current.x;
-                const dy = particle.y - mouseRef.current.y;
+                const dx = line.x - mouseRef.current.x;
+                const dy = line.y - mouseRef.current.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                const repelRadius = 150;
+                const repelRadius = 120;
 
-                // Repel from cursor
+                // Horizontal repel from cursor
+                let offsetX = 0;
                 if (distance < repelRadius && distance > 0) {
                     const force = (repelRadius - distance) / repelRadius;
-                    const angle = Math.atan2(dy, dx);
-                    particle.vx += Math.cos(angle) * force * 2;
-                    particle.vy += Math.sin(angle) * force * 2;
+                    offsetX = (dx / distance) * force * 80;
                 }
 
-                // Apply friction
-                particle.vx *= 0.98;
-                particle.vy *= 0.98;
+                // Move down continuously
+                line.y += line.speed;
 
-                // Add slight random movement
-                particle.vx += (Math.random() - 0.5) * 0.1;
-                particle.vy += (Math.random() - 0.5) * 0.1;
+                // Reset to top when reaching bottom
+                if (line.y > dimensions.height + 50) {
+                    line.y = -50;
+                    line.text = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+                    line.color = colors[Math.floor(Math.random() * colors.length)];
+                }
 
-                // Update position
-                particle.x += particle.vx;
-                particle.y += particle.vy;
+                // Draw the code line
+                ctx.font = `${line.size}px 'Consolas', 'Monaco', 'Courier New', monospace`;
+                ctx.fillStyle = line.color;
+                ctx.globalAlpha = line.opacity;
 
-                // Wrap around screen
-                if (particle.x < -200) particle.x = dimensions.width + 100;
-                if (particle.x > dimensions.width + 200) particle.x = -100;
-                if (particle.y < -50) particle.y = dimensions.height + 50;
-                if (particle.y > dimensions.height + 50) particle.y = -50;
+                // Add glow effect
+                ctx.shadowColor = line.color;
+                ctx.shadowBlur = 8;
 
-                // Draw particle
-                ctx.font = `${particle.size}px 'JetBrains Mono', 'Fira Code', monospace`;
-                ctx.fillStyle = particle.color;
-                ctx.globalAlpha = particle.opacity;
-                ctx.fillText(particle.text, particle.x, particle.y);
+                ctx.fillText(line.text, line.x + offsetX, line.y);
+
+                // Reset shadow
+                ctx.shadowBlur = 0;
             });
 
             ctx.globalAlpha = 1;

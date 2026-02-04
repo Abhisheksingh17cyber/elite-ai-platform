@@ -256,8 +256,8 @@ export default function Home() {
       {/* Interactive Code Background */}
       <CodeBackground />
 
-      {/* Dark overlay for readability */}
-      <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f]/90 via-[#0a0a0f]/70 to-[#0a0a0f]/90 pointer-events-none z-[1]" />
+      {/* Light overlay for readability - reduced opacity to show code */}
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f]/60 via-[#0a0a0f]/40 to-[#0a0a0f]/60 pointer-events-none z-[1]" />
 
       {/* Glow effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-[2]">
@@ -297,8 +297,8 @@ export default function Home() {
           <button
             onClick={() => { setLoginType('candidate'); setError(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-sm transition-all duration-300 ${loginType === 'candidate'
-                ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/30'
-                : 'text-gray-400 hover:text-white hover:bg-[#1a1a24]'
+              ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/30'
+              : 'text-gray-400 hover:text-white hover:bg-[#1a1a24]'
               }`}
           >
             <Users className="w-4 h-4" />
@@ -307,8 +307,8 @@ export default function Home() {
           <button
             onClick={() => { setLoginType('admin'); setError(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-sm transition-all duration-300 ${loginType === 'admin'
-                ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/30'
-                : 'text-gray-400 hover:text-white hover:bg-[#1a1a24]'
+              ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/30'
+              : 'text-gray-400 hover:text-white hover:bg-[#1a1a24]'
               }`}
           >
             <UserCog className="w-4 h-4" />
