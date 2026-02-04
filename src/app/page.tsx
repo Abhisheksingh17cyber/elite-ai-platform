@@ -6,16 +6,16 @@ import {
   User,
   Mail,
   Loader2,
-  Rocket,
   Shield,
-  ArrowRight,
   AlertTriangle,
   CheckCircle,
   Clock,
   LogIn,
   Lock,
   UserCog,
-  Users
+  Users,
+  Flame,
+  Code
 } from 'lucide-react';
 import { useChallengeStore } from '@/store/challengeStore';
 import { useAdminStore } from '@/store/adminStore';
@@ -23,21 +23,22 @@ import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 
-// Dynamic import for MainLayout (challenge platform)
+// Dynamic imports
 const MainLayout = dynamic(() => import('@/components/MainLayout'), {
   ssr: false,
   loading: () => (
-    <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
         <p className="text-gray-400 text-lg">Loading Elite Challenge Platform...</p>
       </div>
     </div>
   ),
 });
 
-// Neon Auth URL
-const NEON_AUTH_URL = 'https://ep-sweet-unit-ahwph4ah.neonauth.c-3.us-east-1.aws.neon.tech/neondb/auth';
+const CodeBackground = dynamic(() => import('@/components/CodeBackground'), {
+  ssr: false,
+});
 
 export default function Home() {
   const router = useRouter();
@@ -61,12 +62,11 @@ export default function Home() {
     timeRemaining: number;
   } | null>(null);
 
-  // Hydration check
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  // Handle Google OAuth session - create candidate session in our system
+  // Handle Google OAuth session
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email && !candidateEmail && !googleSessionHandled) {
       setGoogleSessionHandled(true);
@@ -100,7 +100,7 @@ export default function Home() {
     }
   }, [status, session, candidateEmail, googleSessionHandled, setSession]);
 
-  // Check if email exists when typing (for candidates)
+  // Check if email exists
   useEffect(() => {
     if (loginType !== 'candidate') return;
 
@@ -134,23 +134,28 @@ export default function Home() {
     return () => clearTimeout(debounce);
   }, [email, loginType]);
 
-  // If candidate is logged in, show the challenge platform
-  if (isHydrated && candidateEmail) {
+  // Show challenge platform if logged in
+  if (candidateEmail) {
     return <MainLayout />;
   }
 
-  // If admin is logged in, redirect to admin dashboard
-  if (isHydrated && isAdminAuth) {
+  // Redirect admin
+  if (isAdminAuth) {
     router.push('/admin/dashboard');
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-          <p className="text-gray-400 text-lg">Redirecting to Admin Dashboard...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    setError(null);
+    try {
+      await signIn('google', { callbackUrl: '/' });
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError('Failed to connect. Please try again.');
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleCandidateLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,14 +191,11 @@ export default function Home() {
           return;
         }
 
-        // Set session in store
         setSession(
           data.session.id,
           data.candidate.name,
           data.candidate.email
         );
-
-        // Page will re-render and show MainLayout
       } else {
         setError(data.error || 'Authentication failed');
       }
@@ -240,9 +242,9 @@ export default function Home() {
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-400 text-lg">Loading...</p>
         </div>
       </div>
@@ -250,15 +252,17 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080b12] flex items-center justify-center p-4">
-      {/* Premium Background effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0d1525] via-[#080b12] to-[#0a0f1a]" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#4f8ff7]/8 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[300px] bg-[#22d3ee]/5 rounded-full blur-[100px]" />
-        <div className="absolute top-1/3 right-0 w-[500px] h-[400px] bg-[#8b5cf6]/6 rounded-full blur-[100px]" />
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(79,143,247,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(79,143,247,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Interactive Code Background */}
+      <CodeBackground />
+
+      {/* Dark overlay for readability */}
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f]/90 via-[#0a0a0f]/70 to-[#0a0a0f]/90 pointer-events-none z-[1]" />
+
+      {/* Glow effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-[2]">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-600/15 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[300px] bg-red-600/10 rounded-full blur-[100px]" />
       </div>
 
       <motion.div
@@ -271,25 +275,30 @@ export default function Home() {
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            className="w-24 h-24 bg-gradient-to-br from-[#4f8ff7] via-[#6366f1] to-[#8b5cf6] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-[#4f8ff7]/30 relative overflow-hidden"
+            className="w-24 h-24 bg-gradient-to-br from-orange-500 via-red-600 to-orange-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-orange-500/40 relative overflow-hidden"
           >
-            <Shield className="w-12 h-12 text-white" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            <Flame className="w-12 h-12 text-white relative z-10" />
           </motion.div>
-          <h1 className="text-4xl font-bold text-white mb-3">
+          <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">
             Elite AI-Architect
           </h1>
           <p className="text-gray-400 text-lg">
             Challenge Platform
           </p>
+          <div className="flex items-center justify-center gap-2 mt-2 text-orange-400 text-sm">
+            <Shield className="w-4 h-4" />
+            <span>5% Pass Rate • Top 1% Developers</span>
+          </div>
         </div>
 
         {/* Login Type Tabs */}
-        <div className="flex gap-2 mb-6 bg-[#0d1117] p-1.5 rounded-xl border border-[#21262d]">
+        <div className="flex gap-2 mb-6 bg-[#111118] p-1.5 rounded-xl border border-orange-500/20">
           <button
             onClick={() => { setLoginType('candidate'); setError(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-sm transition-all duration-300 ${loginType === 'candidate'
-                ? 'bg-gradient-to-r from-[#4f8ff7] to-[#2563eb] text-white shadow-lg shadow-[#4f8ff7]/25'
-                : 'text-gray-400 hover:text-white hover:bg-[#151b26]'
+                ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/30'
+                : 'text-gray-400 hover:text-white hover:bg-[#1a1a24]'
               }`}
           >
             <Users className="w-4 h-4" />
@@ -298,8 +307,8 @@ export default function Home() {
           <button
             onClick={() => { setLoginType('admin'); setError(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-sm transition-all duration-300 ${loginType === 'admin'
-                ? 'bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white shadow-lg shadow-[#8b5cf6]/25'
-                : 'text-gray-400 hover:text-white hover:bg-[#151b26]'
+                ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/30'
+                : 'text-gray-400 hover:text-white hover:bg-[#1a1a24]'
               }`}
           >
             <UserCog className="w-4 h-4" />
@@ -307,41 +316,64 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Login Form */}
-        <motion.div
-          key={loginType}
-          initial={{ opacity: 0, x: loginType === 'candidate' ? -20 : 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.2 }}
-          className="bg-gradient-to-b from-[#0d1117] to-[#0a0f18] border border-[#21262d] rounded-2xl p-6 shadow-2xl shadow-black/50"
-        >
-          <form onSubmit={loginType === 'candidate' ? handleCandidateLogin : handleAdminLogin} className="space-y-5">
-            {/* Email Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={loginType === 'admin' ? 'admin@example.com' : 'you@example.com'}
-                  className="w-full bg-[#0a0a0f] border border-[#27272a] rounded-xl py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                  disabled={isLoading}
-                />
-                {loginType === 'candidate' && isCheckingEmail && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 animate-spin" />
+        {/* Login Card */}
+        <div className="bg-gradient-to-b from-[#111118] to-[#0d0d14] border border-orange-500/20 rounded-2xl p-6 shadow-2xl shadow-black/50 backdrop-blur-sm">
+          {loginType === 'candidate' ? (
+            <form onSubmit={handleCandidateLogin} className="space-y-5">
+              {/* Google Login */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={isGoogleLoading}
+                className="w-full flex items-center justify-center gap-3 py-3.5 bg-white hover:bg-gray-100 disabled:bg-gray-200 text-gray-800 rounded-xl font-semibold transition-all shadow-lg"
+              >
+                {isGoogleLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
                 )}
-                {loginType === 'candidate' && !isCheckingEmail && existingCandidate && (
-                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
-                )}
-              </div>
-            </div>
+                {isGoogleLoading ? 'Connecting...' : 'Continue with Google'}
+              </button>
 
-            {/* Candidate: Existing User Info */}
-            {loginType === 'candidate' && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-700" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-[#0d0d14] text-gray-500">or continue with email</span>
+                </div>
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full bg-[#0a0a0f] border border-gray-700 rounded-xl py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors"
+                    disabled={isLoading}
+                  />
+                  {isCheckingEmail && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 animate-spin" />
+                  )}
+                  {!isCheckingEmail && existingCandidate && (
+                    <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                  )}
+                </div>
+              </div>
+
+              {/* Existing Candidate Info */}
               <AnimatePresence>
                 {existingCandidate && (
                   <motion.div
@@ -369,10 +401,8 @@ export default function Home() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            )}
 
-            {/* Candidate: Name Field (new users only) */}
-            {loginType === 'candidate' && (
+              {/* Name Field - Only for new candidates */}
               <AnimatePresence>
                 {!existingCandidate && email && (
                   <motion.div
@@ -391,17 +421,77 @@ export default function Home() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your full name"
-                        className="w-full bg-[#0a0a0f] border border-[#27272a] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                        className="w-full bg-[#0a0a0f] border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors"
                         disabled={isLoading}
                       />
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-            )}
 
-            {/* Admin: Password Field */}
-            {loginType === 'admin' && (
+              {/* Error Message */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400 text-sm"
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Submit Button */}
+              <motion.button
+                type="submit"
+                disabled={isLoading || !email}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-50 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {existingCandidate ? 'Resuming...' : 'Creating Session...'}
+                  </>
+                ) : (
+                  <>
+                    <Flame className="w-5 h-5" />
+                    {existingCandidate ? 'Continue Challenge' : 'Start Challenge'}
+                  </>
+                )}
+              </motion.button>
+            </form>
+          ) : (
+            /* Admin Login Form */
+            <form onSubmit={handleAdminLogin} className="space-y-5">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <UserCog className="w-6 h-6 text-orange-400" />
+                </div>
+                <p className="text-gray-400 text-sm">Admin access only</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Admin Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@example.com"
+                    className="w-full bg-[#0a0a0f] border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
                   Password
@@ -412,142 +502,67 @@ export default function Home() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full bg-[#0a0a0f] border border-[#27272a] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors"
+                    placeholder="••••••••"
+                    className="w-full bg-[#0a0a0f] border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors"
                     disabled={isLoading}
                   />
                 </div>
               </div>
-            )}
 
-            {/* Error Message */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400 text-sm"
-                >
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Submit Button */}
-            <motion.button
-              type="submit"
-              disabled={isLoading || !email || (loginType === 'admin' && !password)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={{
-                background: loginType === 'candidate'
-                  ? 'linear-gradient(to right, #2563eb, #7c3aed)'
-                  : 'linear-gradient(to right, #7c3aed, #9333ea)'
-              }}
-              className="w-full py-3.5 hover:opacity-90 disabled:opacity-50 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-lg"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {loginType === 'candidate'
-                    ? (existingCandidate ? 'Resuming...' : 'Creating Session...')
-                    : 'Signing in...'}
-                </>
-              ) : (
-                <>
-                  {loginType === 'candidate' ? (
-                    existingCandidate ? (
-                      <>
-                        Continue Challenge
-                        <ArrowRight className="w-5 h-5" />
-                      </>
-                    ) : (
-                      <>
-                        <Rocket className="w-5 h-5" />
-                        Start Challenge
-                      </>
-                    )
-                  ) : (
-                    <>
-                      <UserCog className="w-5 h-5" />
-                      Sign in as Admin
-                    </>
-                  )}
-                </>
-              )}
-            </motion.button>
-          </form>
-
-          {/* Google Sign-In (for candidates only) */}
-          {loginType === 'candidate' && (
-            <>
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#27272a]"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-[#12121a] text-gray-500">or continue with</span>
-                </div>
-              </div>
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2 text-red-400 text-sm"
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <motion.button
-                type="button"
-                onClick={async () => {
-                  setIsGoogleLoading(true);
-                  setError(null);
-                  try {
-                    await signIn('google', { callbackUrl: '/' });
-                  } catch (err) {
-                    console.error('Google sign-in error:', err);
-                    setError('Google sign-in failed. Please try again.');
-                    setIsGoogleLoading(false);
-                  }
-                }}
-                disabled={isGoogleLoading || isLoading}
+                type="submit"
+                disabled={isLoading || !email || !password}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-3.5 bg-white hover:bg-gray-100 disabled:opacity-50 text-gray-800 rounded-xl font-medium transition-all flex items-center justify-center gap-3 border border-gray-200"
+                className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-50 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30"
               >
-                {isGoogleLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Authenticating...
+                  </>
                 ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                  </svg>
+                  <>
+                    <Shield className="w-5 h-5" />
+                    Access Dashboard
+                  </>
                 )}
-                {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
               </motion.button>
-            </>
+            </form>
           )}
 
           {/* Info */}
-          <div className="mt-6 pt-5 border-t border-[#27272a]">
-            <div className="text-center text-xs text-gray-500 space-y-2">
-              {loginType === 'candidate' ? (
-                <>
-                  <p>🔒 Your session will be monitored for security</p>
-                  <p>⏱️ Challenge duration: 45 minutes</p>
-                </>
-              ) : (
-                <>
-                  <p>🛡️ Admin access is restricted</p>
-                  <p>📊 Monitor candidates in real-time</p>
-                </>
-              )}
+          <div className="mt-6 pt-5 border-t border-gray-800">
+            <div className="text-center text-xs text-gray-500 space-y-1">
+              <p className="flex items-center justify-center gap-1">
+                <Shield className="w-3 h-3" />
+                Your session will be monitored for security
+              </p>
+              <p className="flex items-center justify-center gap-1">
+                <Clock className="w-3 h-3" />
+                Challenge duration: 45 minutes
+              </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-gray-600 text-xs">
-            © 2026 Elite AI-Architect Challenge Platform
-          </p>
+        <div className="text-center mt-6 text-gray-600 text-xs">
+          © 2026 Elite AI-Architect Challenge. Built for the top 1%.
         </div>
       </motion.div>
     </div>
