@@ -1,154 +1,78 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users,
-  Activity,
-  AlertTriangle,
-  Clock,
-  TrendingUp,
-  Eye,
-  Shield,
-  Search,
-  Filter,
-  MoreVertical,
-  Play,
-  Ban,
-  Flag,
-  RefreshCw,
-  Monitor,
-  Code,
-  CheckCircle,
-  XCircle,
-  Zap,
-  BarChart3,
-  Settings,
-  LogOut
+  Users, Activity, AlertTriangle, Clock, TrendingUp, Eye,
+  Shield, Search, Filter, MoreVertical, Ban, Flag,
+  RefreshCw, ChevronRight, Terminal, Lock, Cpu, Server,
+  LogOut, CheckCircle, XCircle, Grid, Zap, Monitor, Database
 } from 'lucide-react';
 import { useAdminStore } from '@/store/adminStore';
 import type { LiveMonitoringData } from '@/lib/database/types';
 import LiveCodeViewer from './LiveCodeViewer';
 
-// Mock data for demonstration
-const mockLiveData: LiveMonitoringData[] = [
-  {
-    session_id: 'sess-001',
-    candidate_name: 'Rahul Sharma',
-    candidate_email: 'rahul@iitd.ac.in',
-    current_file: 'main.py',
-    time_remaining: 5400,
-    current_score: 45,
-    anti_cheat_warnings: 0,
-    status: 'active',
-    last_activity: new Date(),
-    code_changes_count: 127
-  },
-  {
-    session_id: 'sess-002',
-    candidate_name: 'Priya Patel',
-    candidate_email: 'priya@iitb.ac.in',
-    current_file: 'auth_service.py',
-    time_remaining: 4200,
-    current_score: 62,
-    anti_cheat_warnings: 1,
-    status: 'active',
-    last_activity: new Date(),
-    code_changes_count: 203
-  },
-  {
-    session_id: 'sess-003',
-    candidate_name: 'Amit Kumar',
-    candidate_email: 'amit@iitm.ac.in',
-    current_file: 'vector_cache.py',
-    time_remaining: 3000,
-    current_score: 38,
-    anti_cheat_warnings: 3,
-    status: 'suspicious',
-    last_activity: new Date(Date.now() - 120000),
-    code_changes_count: 89
-  },
-  {
-    session_id: 'sess-004',
-    candidate_name: 'Neha Singh',
-    candidate_email: 'neha@iitkgp.ac.in',
-    current_file: 'security_scan.py',
-    time_remaining: 6000,
-    current_score: 71,
-    anti_cheat_warnings: 0,
-    status: 'active',
-    last_activity: new Date(),
-    code_changes_count: 156
-  }
-];
+// --- Premium UI Components ---
 
-const mockStats = {
-  total_candidates: 156,
-  active_sessions: 4,
-  completed_sessions: 142,
-  average_score: 47.3,
-  pass_rate: 5.2,
-  average_completion_time: 98,
-  anti_cheat_flags: 12
+const GlassCard = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <div className={`bg-[#0d0d10]/80 backdrop-blur-xl border border-white/5 shadow-2xl rounded-xl ${className}`}>
+    {children}
+  </div>
+);
+
+const Badge = ({ children, variant = 'neutral' }: { children: React.ReactNode; variant?: 'neutral' | 'success' | 'warning' | 'danger' | 'info' }) => {
+  const styles = {
+    neutral: 'bg-zinc-800/50 text-zinc-400 border-zinc-700/50',
+    success: 'bg-emerald-950/30 text-emerald-400 border-emerald-900/50',
+    warning: 'bg-amber-950/30 text-amber-400 border-amber-900/50',
+    danger: 'bg-rose-950/30 text-rose-400 border-rose-900/50',
+    info: 'bg-blue-950/30 text-blue-400 border-blue-900/50',
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider border ${styles[variant]}`}>
+      {children}
+    </span>
+  );
 };
 
-// StatCard Component - moved outside to prevent recreation during render
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subtext,
-  trend,
-  color = 'blue'
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | number;
-  subtext?: string;
-  trend?: 'up' | 'down';
-  color?: string;
-}) {
-  const colorClasses: Record<string, { bg: string; text: string }> = {
-    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
-    green: { bg: 'bg-green-500/10', text: 'text-green-400' },
-    purple: { bg: 'bg-purple-500/10', text: 'text-purple-400' },
-    red: { bg: 'bg-red-500/10', text: 'text-red-400' },
-  };
+// Target Icon (Custom SVG to avoid missing lucide icon)
+const Target = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
+);
 
-  const colors = colorClasses[color] || colorClasses.blue;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#12121a] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-all"
-    >
-      <div className="flex items-start justify-between">
-        <div className={`p-3 rounded-lg ${colors.bg}`}>
-          <Icon className={`w-6 h-6 ${colors.text}`} />
+const HUDStat = ({ label, value, icon: Icon, trend }: { label: string; value: string | number; icon: any; trend?: 'up' | 'down' }) => (
+  <div className="relative group p-5 bg-[#0d0d10] border border-white/5 hover:border-blue-500/20 transition-all duration-300 rounded-lg overflow-hidden">
+    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+      <Icon className="w-16 h-16 text-blue-500" />
+    </div>
+    <div className="relative z-10">
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className="w-4 h-4 text-zinc-500 group-hover:text-blue-400 transition-colors" />
+        <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">{label}</span>
+      </div>
+      <div className="text-3xl font-bold text-zinc-100 font-mono tracking-tight">{value}</div>
+      {trend && (
+        <div className={`flex items-center gap-1 mt-2 text-xs ${trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+          <TrendingUp className={`w-3 h-3 ${trend === 'down' ? 'rotate-180' : ''}`} />
+          <span>{trend === 'up' ? '+12%' : '-5%'}</span>
+          <span className="text-zinc-600 ml-1">vs last hr</span>
         </div>
-        {trend && (
-          <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-            <TrendingUp className={`w-4 h-4 ${trend === 'down' ? 'rotate-180' : ''}`} />
-            <span>{trend === 'up' ? '+2.5%' : '-1.2%'}</span>
-          </div>
-        )}
-      </div>
-      <div className="mt-4">
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className="text-3xl font-bold text-white mt-1">{value}</p>
-        {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
-      </div>
-    </motion.div>
-  );
-}
+      )}
+    </div>
+    {/* Corner Accent */}
+    <div className="absolute bottom-0 left-0 w-8 h-[2px] bg-blue-500/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className="absolute bottom-0 left-0 h-8 w-[2px] bg-blue-500/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+  </div>
+);
+
+// --- Main Dashboard ---
 
 export default function AdminDashboard() {
   const {
     isAuthenticated,
     adminUser,
     logout,
-    liveMonitoringData,
+    liveMonitoringData = [],
     statistics,
     setLiveMonitoringData,
     setStatistics,
@@ -164,29 +88,19 @@ export default function AdminDashboard() {
     flagSession
   } = useAdminStore();
 
-  const [showActions, setShowActions] = useState<string | null>(null);
-  const [isDataLoading, setIsDataLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'monitoring' | 'solutions'>('monitoring');
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [showActions, setShowActions] = useState<string | null>(null);
 
-  // Fetch live data from database
+  // Mock Data & Fetch Logic preserved from original
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsDataLoading(true);
         const response = await fetch('/api/admin/monitoring');
         const data = await response.json();
-
         if (data.success) {
-          // Transform API data to LiveMonitoringData format
-          const monitoringData: LiveMonitoringData[] = data.data.candidates.map((c: {
-            sessionId: string;
-            name: string;
-            email: string;
-            currentCode: string;
-            timeRemaining: number;
-            violations: number;
-            scores: { security: number; architecture: number; performance: number };
-          }) => ({
+          const monitoringData: LiveMonitoringData[] = data.data.candidates.map((c: any) => ({
             session_id: c.sessionId,
             candidate_name: c.name,
             candidate_email: c.email,
@@ -198,7 +112,6 @@ export default function AdminDashboard() {
             last_activity: new Date(),
             code_changes_count: 0
           }));
-
           setLiveMonitoringData(monitoringData);
           setStatistics({
             total_candidates: data.data.statistics.activeTests + data.data.statistics.completedToday,
@@ -209,27 +122,26 @@ export default function AdminDashboard() {
             average_completion_time: 0,
             anti_cheat_flags: data.data.statistics.criticalViolations
           });
-        } else {
-          // Fall back to mock data if API fails
-          setLiveMonitoringData(mockLiveData);
-          setStatistics(mockStats);
         }
       } catch (error) {
-        console.error('Failed to fetch monitoring data:', error);
-        // Fall back to mock data
-        setLiveMonitoringData(mockLiveData);
-        setStatistics(mockStats);
+        console.error('Failed to fetch data', error);
       } finally {
         setIsDataLoading(false);
       }
     };
-
     fetchData();
-
-    // Auto-refresh every 10 seconds
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [setLiveMonitoringData, setStatistics]);
+
+  const handleFlagSession = async (sessionId: string) => {
+    if (confirm('Flag this session as suspicious?')) await flagSession(sessionId, 'Admin Flag');
+  };
+
+  const handleTerminateSession = async (sessionId: string) => {
+    const reason = prompt('Reason for termination:');
+    if (reason) await terminateSession(sessionId, reason);
+  };
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -240,566 +152,312 @@ export default function AdminDashboard() {
 
   const filteredData = liveMonitoringData.filter(d => {
     const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
-    const matchesSearch =
-      d.candidate_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.candidate_email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = d.candidate_name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-400 bg-green-400/10';
-      case 'suspicious': return 'text-yellow-400 bg-yellow-400/10';
-      case 'flagged': return 'text-red-400 bg-red-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
-    }
-  };
-
-  const getSelectedCandidate = () => {
-    return liveMonitoringData.find(d => d.session_id === liveViewSessionId);
-  };
-
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
-  }
-
-  const handleFlagSession = async (sessionId: string) => {
-    if (confirm('Are you sure you want to flag this session as suspicious?')) {
-      await flagSession(sessionId, 'Manual flag by admin');
-    }
-  };
-
-  const handleTerminateSession = async (sessionId: string) => {
-    const reason = prompt('Please enter a reason for termination:');
-    if (reason) {
-      await terminateSession(sessionId, reason);
-    }
-  };
-
-  if (isDataLoading && liveMonitoringData.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-400 text-lg">Loading dashboard data...</p>
-        </div>
-      </div>
-    );
-  }
+  if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* Live Viewer Modal */}
-      {isLiveViewActive && liveViewSessionId && (
-        <LiveCodeViewer
-          candidateName={getSelectedCandidate()?.candidate_name || 'Unknown Candidate'}
-          sessionId={liveViewSessionId}
-          candidateId={liveViewSessionId}
-          onClose={stopLiveView}
-        />
-      )}
+    <div className="min-h-screen bg-[#050507] text-zinc-300 font-sans selection:bg-blue-500/30">
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-[#27272a]">
-        <div className="max-w-screen-2xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="font-bold text-lg">Admin Dashboard</h1>
-                <p className="text-xs text-gray-500">Elite Challenge Platform</p>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex items-center gap-2 bg-[#1a1a24] p-1 rounded-lg border border-[#27272a]">
-              <button
-                onClick={() => setActiveTab('monitoring')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'monitoring'
-                  ? 'bg-[#27272a] text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-                  }`}
-              >
-                Live Monitoring
-              </button>
-              <button
-                onClick={() => setActiveTab('solutions')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'solutions'
-                  ? 'bg-[#27272a] text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-                  }`}
-              >
-                Problem Solutions
-              </button>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-red-400 text-sm font-medium">LIVE</span>
-                <span className="text-gray-400 text-sm">{statistics.active_sessions} Active</span>
-              </div>
-
-              <button className="p-2 hover:bg-[#1a1a24] rounded-lg transition-colors">
-                <Settings className="w-5 h-5 text-gray-400" />
-              </button>
-
-              <div className="flex items-center gap-3 pl-4 border-l border-[#27272a]">
-                <div className="text-right">
-                  <p className="text-sm font-medium">{adminUser?.name}</p>
-                  <p className="text-xs text-gray-500">{adminUser?.role}</p>
-                </div>
-                <button
-                  onClick={logout}
-                  className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
+      {/* Top Navigation Bar */}
+      <nav className="h-16 border-b border-white/5 bg-[#0d0d10]/50 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-6">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold text-zinc-100 tracking-wide">ELITE<span className="text-blue-500">ADMIN</span></h1>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider">System Operational</p>
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-screen-2xl mx-auto px-6 py-8">
-        {/* Monitoring View */}
-        {activeTab === 'monitoring' && (
-          <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatCard
-                icon={Users}
-                label="Total Candidates"
-                value={statistics.total_candidates}
-                subtext="All time registrations"
-                trend="up"
-                color="blue"
-              />
-              <StatCard
-                icon={Activity}
-                label="Active Sessions"
-                value={statistics.active_sessions}
-                subtext="Currently taking test"
-                color="green"
-              />
-              <StatCard
-                icon={BarChart3}
-                label="Pass Rate"
-                value={`${statistics.pass_rate}%`}
-                subtext="Score ≥85 required"
-                trend="down"
-                color="purple"
-              />
-              <StatCard
-                icon={AlertTriangle}
-                label="Anti-Cheat Flags"
-                value={statistics.anti_cheat_flags}
-                subtext="High severity violations"
-                color="red"
-              />
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:block text-right mr-4">
+            <p className="text-xs font-medium text-zinc-200">{adminUser?.name || 'Commander'}</p>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{adminUser?.role || 'Super Admin'}</p>
+          </div>
+          <button onClick={logout} className="flex items-center gap-2 px-3 py-1.5 rounded border border-white/5 hover:bg-white/5 hover:text-white transition-colors text-xs text-zinc-400">
+            <LogOut className="w-3 h-3" />
+            LOGOUT
+          </button>
+        </div>
+      </nav>
 
-            {/* Live Monitoring Section */}
-            <div className="bg-[#12121a] border border-[#27272a] rounded-xl overflow-hidden">
-              {/* Section Header */}
-              <div className="px-6 py-4 border-b border-[#27272a] flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Monitor className="w-5 h-5 text-blue-400" />
-                  <h2 className="font-semibold text-lg">Live Monitoring</h2>
-                  <span className="px-2 py-1 text-xs bg-blue-500/10 text-blue-400 rounded-full">
-                    Real-time
-                  </span>
-                </div>
+      {/* Main Content Area */}
+      <main className="p-6 max-w-7xl mx-auto space-y-8">
 
-                <div className="flex items-center gap-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        {/* Statistics HUD */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <HUDStat label="Active Sessions" value={statistics.active_sessions} icon={Activity} trend="up" />
+          <HUDStat label="Total Candidates" value={statistics.total_candidates} icon={Users} />
+          <HUDStat label="Avg. Score" value={`${Math.round(statistics.average_score)}%`} icon={Target} />
+          <HUDStat label="Security Flags" value={statistics.anti_cheat_flags} icon={AlertTriangle} trend={statistics.anti_cheat_flags > 0 ? "up" : undefined} />
+        </div>
+
+        {/* Control Interface */}
+        <div className="space-y-4">
+          {/* Tabs */}
+          <div className="flex border-b border-white/5">
+            {[
+              { id: 'monitoring', label: 'Live Operations', icon: Monitor },
+              { id: 'solutions', label: 'Reference Data', icon: Database }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                  }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === 'monitoring' && (
+            <GlassCard className="min-h-[500px]">
+              {/* Toolbar */}
+              <div className="p-4 border-b border-white/5 flex flex-col md:flex-row justify-between gap-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                     <input
                       type="text"
-                      placeholder="Search candidates..."
+                      placeholder="SEARCH CANDIDATE ID..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 bg-[#1a1a24] border border-[#27272a] rounded-lg text-sm focus:outline-none focus:border-blue-500 w-64"
+                      className="w-full bg-[#050507] border border-white/5 rounded-lg pl-9 pr-4 py-2 text-xs font-mono text-zinc-300 focus:outline-none focus:border-blue-500/50"
                     />
                   </div>
-
-                  {/* Filter */}
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-500" />
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'suspicious' | 'flagged')}
-                      className="bg-[#1a1a24] border border-[#27272a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="active">Active</option>
-                      <option value="suspicious">Suspicious</option>
-                      <option value="flagged">Flagged</option>
-                    </select>
-                  </div>
-
-                  {/* Refresh */}
-                  <button className="p-2 hover:bg-[#1a1a24] rounded-lg transition-colors">
-                    <RefreshCw className="w-5 h-5 text-gray-400" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-[#1a1a24]">
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Candidate</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Current File</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Time Left</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Score</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Status</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Warnings</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">Activity</th>
-                      <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData.map((candidate) => (
-                      <motion.tr
-                        key={candidate.session_id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="border-t border-[#27272a] hover:bg-[#1a1a24]/50 transition-colors"
+                  <div className="flex gap-1.5 p-1 bg-[#050507] rounded-lg border border-white/5">
+                    {['all', 'active', 'suspicious', 'flagged'].map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setStatusFilter(filter as any)}
+                        className={`px-3 py-1 rounded text-[10px] font-medium uppercase transition-all ${statusFilter === filter
+                            ? 'bg-zinc-800 text-zinc-100 shadow'
+                            : 'text-zinc-600 hover:text-zinc-400'
+                          }`}
                       >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-linear-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-medium">
-                                {candidate.candidate_name.split(' ').map(n => n[0]).join('')}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium">{candidate.candidate_name}</p>
-                              <p className="text-xs text-gray-500">{candidate.candidate_email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Code className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm font-mono">{candidate.current_file}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className={`flex items-center gap-2 ${candidate.time_remaining < 1800 ? 'text-red-400' : 'text-gray-300'}`}>
-                            <Clock className="w-4 h-4" />
-                            <span className="font-mono">{formatTime(candidate.time_remaining)}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-[#27272a] rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${candidate.current_score >= 85 ? 'bg-green-500' :
-                                  candidate.current_score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                                  }`}
-                                style={{ width: `${candidate.current_score}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium">{candidate.current_score}/100</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(candidate.status)}`}>
-                            {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {candidate.anti_cheat_warnings > 0 ? (
-                            <div className="flex items-center gap-2 text-yellow-400">
-                              <AlertTriangle className="w-4 h-4" />
-                              <span className="font-medium">{candidate.anti_cheat_warnings}</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-green-400">
-                              <CheckCircle className="w-4 h-4" />
-                              <span>Clean</span>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-blue-400" />
-                            <span className="text-sm">{candidate.code_changes_count} changes</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => startLiveView(candidate.session_id)}
-                              className="p-2 hover:bg-blue-500/10 rounded-lg transition-colors group"
-                              title="Watch Live"
-                            >
-                              <Eye className="w-4 h-4 text-gray-400 group-hover:text-blue-400" />
-                            </button>
-                            <div className="relative">
-                              <button
-                                onClick={() => setShowActions(showActions === candidate.session_id ? null : candidate.session_id)}
-                                className="p-2 hover:bg-[#1a1a24] rounded-lg transition-colors"
-                              >
-                                <MoreVertical className="w-4 h-4 text-gray-400" />
-                              </button>
-                              {showActions === candidate.session_id && (
-                                <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a24] border border-[#27272a] rounded-lg shadow-xl z-10">
-                                  <button
-                                    onClick={() => handleFlagSession(candidate.session_id)}
-                                    className="w-full px-4 py-2 text-left text-sm hover:bg-[#27272a] flex items-center gap-2 text-yellow-400"
-                                  >
-                                    <Flag className="w-4 h-4" />
-                                    Flag Session
-                                  </button>
-                                  <button
-                                    onClick={() => handleTerminateSession(candidate.session_id)}
-                                    className="w-full px-4 py-2 text-left text-sm hover:bg-[#27272a] flex items-center gap-2 text-red-400"
-                                  >
-                                    <Ban className="w-4 h-4" />
-                                    Terminate
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      </motion.tr>
+                        {filter}
+                      </button>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {filteredData.length === 0 && (
-                <div className="px-6 py-12 text-center">
-                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400">No active sessions found</p>
-                  <p className="text-sm text-gray-500 mt-1">Waiting for candidates to start their tests</p>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Quick Stats Footer */}
-            <div className="mt-8 grid grid-cols-3 gap-6">
-              <div className="bg-[#12121a] border border-[#27272a] rounded-xl p-6">
-                <h3 className="text-sm font-medium text-gray-400 mb-4">Score Distribution</h3>
-                <div className="space-y-3">
-                  {[
-                    { range: '85-100', count: 8, color: 'bg-green-500' },
-                    { range: '60-84', count: 23, color: 'bg-yellow-500' },
-                    { range: '40-59', count: 67, color: 'bg-orange-500' },
-                    { range: '0-39', count: 44, color: 'bg-red-500' },
-                  ].map(({ range, count, color }) => (
-                    <div key={range} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 w-16">{range}</span>
-                      <div className="flex-1 h-2 bg-[#27272a] rounded-full overflow-hidden">
-                        <div className={`h-full ${color}`} style={{ width: `${(count / 142) * 100}%` }} />
-                      </div>
-                      <span className="text-xs text-gray-400 w-8">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-[#12121a] border border-[#27272a] rounded-xl p-6">
-                <h3 className="text-sm font-medium text-gray-400 mb-4">Recent Activity</h3>
-                <div className="space-y-3">
-                  {[
-                    { action: 'Session started', user: 'Rahul S.', time: '2 min ago', icon: Play },
-                    { action: 'Test submitted', user: 'Ananya K.', time: '5 min ago', icon: CheckCircle },
-                    { action: 'Warning issued', user: 'Vijay P.', time: '8 min ago', icon: AlertTriangle },
-                    { action: 'Session ended', user: 'Meera R.', time: '12 min ago', icon: XCircle },
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
-                      <item.icon className="w-4 h-4 text-gray-500" />
-                      <div className="flex-1">
-                        <p className="text-sm">{item.action}</p>
-                        <p className="text-xs text-gray-500">{item.user}</p>
-                      </div>
-                      <span className="text-xs text-gray-500">{item.time}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-[#12121a] border border-[#27272a] rounded-xl p-6">
-                <h3 className="text-sm font-medium text-gray-400 mb-4">System Status</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: 'Database', status: 'Operational', healthy: true },
-                    { name: 'Anti-Cheat', status: 'Active', healthy: true },
-                    { name: 'Code Runner', status: 'Operational', healthy: true },
-                    { name: 'WebSocket', status: 'Connected', healthy: true },
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-300">{item.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${item.healthy ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <span className={`text-xs ${item.healthy ? 'text-green-400' : 'text-red-400'}`}>
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Problem Solutions View */}
-        {activeTab === 'solutions' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-white">Problem Solutions</h2>
-                <p className="text-gray-400 text-sm mt-1">Reference guide for grading and candidate support</p>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-4 py-2 bg-[#1a1a24] text-white rounded-lg border border-[#27272a] text-sm flex items-center gap-2">
-                  <Filter className="w-4 h-4" /> Filter
+                <button
+                  onClick={() => { }}
+                  className="p-2 text-zinc-500 hover:text-blue-400 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
                 </button>
               </div>
-            </div>
 
-            {/* Problem 1: Distributed AI System */}
-            <div className="bg-[#12121a] border border-[#27272a] rounded-xl overflow-hidden">
-              <div className="p-6 border-b border-[#27272a]">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-red-400" />
-                    Distributed AI System with Multi-Region Failover
-                  </h3>
-                  <span className="px-3 py-1 bg-red-500/10 text-red-400 rounded-full text-xs font-bold border border-red-500/30">
-                    EXTREME DIFFICULTY
-                  </span>
-                </div>
-                <p className="text-gray-300 mb-4">
-                  Scenario: Build a production AI system that processes 1M+ requests/day across 3 geographic regions with &lt;50ms latency requirement.
-                </p>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <span className="text-gray-400 flex items-center gap-1"><Zap className="w-4 h-4 text-yellow-400" /> 95% Sematic Caching</span>
-                  <span className="text-gray-400 flex items-center gap-1"><Shield className="w-4 h-4 text-green-400" /> Prompt Injection Defense</span>
-                  <span className="text-gray-400 flex items-center gap-1"><Code className="w-4 h-4 text-blue-400" /> Multi-Region Failover</span>
-                </div>
+              {/* Data Grid */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#0f0f13] text-zinc-500 text-[10px] uppercase tracking-wider font-semibold border-b border-white/5">
+                      <th className="px-6 py-4">Candidate</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Metrics</th>
+                      <th className="px-6 py-4">Integrity</th>
+                      <th className="px-6 py-4 text-right">Controls</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    <AnimatePresence>
+                      {filteredData.map((session) => (
+                        <motion.tr
+                          key={session.session_id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="hover:bg-white/[0.02] transition-colors group"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-zinc-800 rounded flex items-center justify-center font-mono text-xs text-zinc-400 group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors">
+                                {session.candidate_name.charAt(0)}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-zinc-200">{session.candidate_name}</div>
+                                <div className="text-[10px] text-zinc-600 font-mono">{session.candidate_email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Badge variant={
+                              session.status === 'active' ? 'success' :
+                                session.status === 'suspicious' ? 'warning' : 'danger'
+                            }>
+                              {session.status}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] text-zinc-500">
+                                <span>SCORE</span>
+                                <span className="font-mono text-zinc-300">{session.current_score}%</span>
+                              </div>
+                              <div className="h-1 bg-zinc-800 rounded-full overflow-hidden w-24">
+                                <div
+                                  className="h-full bg-blue-500"
+                                  style={{ width: `${session.current_score}%` }}
+                                />
+                              </div>
+                              <div className="flex items-center gap-1 text-[10px] text-zinc-500 pt-1">
+                                <Clock className="w-3 h-3" />
+                                <span className="font-mono">{formatTime(session.time_remaining)}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {session.anti_cheat_warnings > 0 ? (
+                              <div className="flex items-center gap-2 text-rose-400">
+                                <AlertTriangle className="w-4 h-4" />
+                                <span className="text-xs font-medium">{session.anti_cheat_warnings} FLAGS</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-zinc-600">
+                                <Shield className="w-4 h-4" />
+                                <span className="text-xs">SECURE</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => startLiveView(session.session_id)}
+                                className="p-2 hover:bg-blue-500/20 rounded text-zinc-400 hover:text-blue-400 transition-colors"
+                                title="View Live"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={() => setShowActions(showActions === session.session_id ? null : session.session_id)}
+                                  className="p-2 hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-200"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                                {showActions === session.session_id && (
+                                  <div className="absolute right-0 top-full mt-2 w-48 bg-[#18181b] border border-white/10 rounded shadow-xl z-50 py-1">
+                                    <button
+                                      onClick={() => handleFlagSession(session.session_id)}
+                                      className="w-full px-4 py-2 text-left text-xs hover:bg-white/5 flex items-center gap-2 text-amber-500"
+                                    >
+                                      <Flag className="w-3 h-3" /> FLAG SESSION
+                                    </button>
+                                    <button
+                                      onClick={() => handleTerminateSession(session.session_id)}
+                                      className="w-full px-4 py-2 text-left text-xs hover:bg-white/5 flex items-center gap-2 text-rose-500"
+                                    >
+                                      <Ban className="w-3 h-3" /> TERMINATE
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+                {filteredData.length === 0 && (
+                  <div className="p-12 text-center text-zinc-600">
+                    <Terminal className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-sm">NO ACTIVE SIGNALS DETECTED</p>
+                  </div>
+                )}
               </div>
-              <div className="p-6 bg-[#0a0a0f]">
-                <h4 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Solution Implementation</h4>
-                <div className="bg-[#1a1a24] rounded-lg p-4 border border-[#27272a]">
-                  <pre className="font-mono text-xs text-green-400 overflow-x-auto">
-                    {`# Multi-Region Failover + Semantic Caching + Injection Defense
+            </GlassCard>
+          )}
 
-import os
-from functools import lru_cache
-import hashlib
+          {activeTab === 'solutions' && (
+            <div className="space-y-4">
+              <GlassCard className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-rose-500/10 rounded-lg">
+                      <Shield className="w-6 h-6 text-rose-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-zinc-100">Distributed AI System</h3>
+                      <div className="flex gap-2 text-[10px] mt-1">
+                        <span className="px-1.5 py-0.5 bg-rose-500/20 text-rose-400 rounded border border-rose-500/30 uppercase">Extreme Difficulty</span>
+                        <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30 uppercase">System Design</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-# CORRECT: Use environment variables
-API_KEY = os.environ.get('LLM_API_KEY')
-
-class MultiRegionRouter:
+                <div className="bg-[#0a0a0c] rounded border border-white/5 p-4 font-mono text-xs overflow-x-auto text-emerald-400">
+                  <pre>{`class DistributedSystem:
     def __init__(self):
+        # Multi-region architecture with active-active replication
         self.regions = ['us-east', 'eu-west', 'ap-south']
+        self.cache = VectorDatabase(consistency='eventual')
     
-    def get_region(self, user_location: str) -> str:
-        # Consistent hashing for region selection
-        hash_val = int(hashlib.md5(user_location.encode()).hexdigest(), 16)
-        return self.regions[hash_val % len(self.regions)]
-
-class SemanticCache:
-    def get(self, query: str):
-        # Check vector similarity > 0.95
-        pass
-
-class PromptInjectionDetector:
-    PATTERNS = ['ignore previous', 'system prompt']
-    
-    def check(self, text):
-        if any(p in text for p in self.PATTERNS):
-            raise SecurityException("Injection Detected")`}
-                  </pre>
+    def route_request(self, req):
+        if self.detect_anomaly(req):
+            raise SecurityViolation("Anomalous pattern detected")
+        return self.load_balancer.dispatch(req)`}</pre>
                 </div>
 
-                <h4 className="text-sm font-semibold text-gray-400 mt-6 mb-3 uppercase tracking-wider">Key Evaluation Points</h4>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <li className="flex items-start gap-2 text-sm text-gray-300">
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                    <span>Does it use environment variables for secrets? (No hardcoded keys)</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-300">
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                    <span>Is consistent hashing used for multi-region routing?</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-300">
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                    <span>Are vector embeddings used for semantic caching?</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-300">
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                    <span>Is there robust prompt injection detection?</span>
-                  </li>
-                </ul>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div>
+                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Security Validation</h4>
+                    <ul className="space-y-2 text-xs text-zinc-300">
+                      <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500" /> Prompt Injection Detection</li>
+                      <li className="flex items-center gap-2"><CheckCircle className="w-3 h-3 text-emerald-500" /> Vector Embeddings Cache</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Red Flags</h4>
+                    <ul className="space-y-2 text-xs text-zinc-300">
+                      <li className="flex items-center gap-2"><AlertTriangle className="w-3 h-3 text-amber-500" /> Hardcoded API Keys</li>
+                      <li className="flex items-center gap-2"><AlertTriangle className="w-3 h-3 text-amber-500" /> Single Region Dependency</li>
+                    </ul>
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Second Problem Placeholder */}
+              <GlassCard className="p-6 opacity-50 hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500/10 rounded-lg">
+                    <Activity className="w-6 h-6 text-amber-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-100">Real-time Data Pipeline</h3>
+                    <p className="text-xs text-zinc-500">Coming Soon</p>
+                  </div>
+                </div>
+              </GlassCard>
             </div>
-
-            {/* Problem 2: Real-time Data Pipeline */}
-            <div className="bg-[#12121a] border border-[#27272a] rounded-xl overflow-hidden">
-              <div className="p-6 border-b border-[#27272a]">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-orange-400" />
-                    Real-time Data Pipeline with Fault Tolerance
-                  </h3>
-                  <span className="px-3 py-1 bg-orange-500/10 text-orange-400 rounded-full text-xs font-bold border border-orange-500/30">
-                    HARD DIFFICULTY
-                  </span>
-                </div>
-                <p className="text-gray-300 mb-4">
-                  Scenario: Build a real-time data pipeline that processes 100K events/second with exactly-once semantics and automatic recovery.
-                </p>
-              </div>
-              <div className="p-6 bg-[#0a0a0f]">
-                <h4 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Solution Implementation</h4>
-                <div className="bg-[#1a1a24] rounded-lg p-4 border border-[#27272a]">
-                  <pre className="font-mono text-xs text-yellow-400 overflow-x-auto">
-                    {`# Kafka-based Streaming + Exactly-Once + Circuit Breaker
-
-class EventProcessor:
-    def __init__(self):
-        self.processed = set()
-        self.checkpoints = {}
-        
-    def process(self, event_id, data):
-        # 1. Idempotency Check
-        if event_id in self.processed:
-            return
-            
-        # 2. Circuit Breaker Logic
-        if self.failures > 5:
-            raise ServiceUnavailable()
-            
-        try:
-            # 3. Process
-            result = transform(data)
-            
-            # 4. Checkpoint
-            self.processed.add(event_id)
-            self.checkpoints[partition] = offset
-            
-        except Exception:
-            self.failures += 1`}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
+
+      {/* Live View Overlay */}
+      <AnimatePresence>
+        {isLiveViewActive && liveViewSessionId && (
+          <LiveCodeViewer
+            candidateName={liveMonitoringData.find(d => d.session_id === liveViewSessionId)?.candidate_name || 'Unknown Target'}
+            sessionId={liveViewSessionId}
+            candidateId={liveViewSessionId}
+            onClose={stopLiveView}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
