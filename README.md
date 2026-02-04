@@ -9,7 +9,8 @@ A comprehensive coding challenge platform designed for top-tier developers. This
 - ⏱️ **45-Minute Timed Challenge** - Anti-cheat timer with urgency indicators
 - 🔐 **Security Trap Detection** - Automatically detects hardcoded API keys and SQL injection vulnerabilities
 - 📊 **Real-time Scoring** - Security, Architecture, and Performance metrics
-- 🎨 **Modern UI** - Framer Motion animations, Monaco Editor, and particle effects
+- 🎨 **Premium Dark UI** - Custom cursor effects, glassmorphism, gradient buttons
+- 🚀 **Auto-Logout on Submit** - Redirects to login after successful submission
 - 📱 **Responsive Design** - Works on desktop and mobile devices
 
 ### Admin Features
@@ -218,26 +219,35 @@ vercel --prod
 ```
 src/
 ├── app/
-│   ├── page.tsx          # Main page with dynamic import
+│   ├── page.tsx          # Main login/challenge page
 │   ├── layout.tsx        # Root layout with metadata
-│   └── globals.css       # Global styles
+│   ├── globals.css       # Premium dark theme styles
+│   ├── admin/            # Admin pages
+│   ├── login/            # Alternate login route
+│   └── setup/            # Database setup page
 ├── components/
 │   ├── MainLayout.tsx    # Main app shell
 │   ├── Timer.tsx         # Challenge timer
 │   ├── CodeEditor.tsx    # Monaco code editor
 │   ├── FileExplorer.tsx  # File tree navigation
 │   ├── Console.tsx       # Output console
-│   ├── ActionButtons.tsx # Run/Test/Submit buttons
+│   ├── ActionButtons.tsx # Run/Stop/Test/Submit buttons
 │   ├── ScorePanel.tsx    # Live scoring display
 │   ├── Requirements.tsx  # Challenge requirements
 │   ├── ChallengeOverview.tsx  # Landing page
-│   └── EvaluationFramework.tsx # Scoring rubric
+│   ├── EvaluationFramework.tsx # Scoring rubric
+│   ├── CustomCursor.tsx  # Animated cursor effects
+│   ├── CursorWrapper.tsx # Client wrapper for cursor
+│   └── admin/            # Admin dashboard components
 ├── store/
-│   └── challengeStore.ts # Zustand state management
+│   ├── challengeStore.ts # Candidate state management
+│   └── adminStore.ts     # Admin state management
 ├── lib/
-│   └── utils.ts          # Utility functions & trap detection
+│   ├── utils.ts          # Utility functions & trap detection
+│   └── database/         # Database helpers
 └── hooks/
-    └── useHydration.ts   # Hydration hook for SSR
+    ├── useAntiCheat.ts   # Anti-cheat monitoring
+    └── useDatabaseSync.ts # Database sync hook
 ```
 
 ## License
