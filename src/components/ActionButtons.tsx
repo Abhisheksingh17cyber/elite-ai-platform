@@ -254,14 +254,14 @@ export default function ActionButtons() {
     }
   };
 
-  const buttonClass = "flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg";
+  const buttonClass = "flex items-center justify-center gap-2 px-3 sm:px-5 py-2.5 min-h-[44px] rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-wrap gap-4"
+      className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-3 sm:gap-4"
     >
       {/* Run/Stop Button */}
       {isRunning ? (

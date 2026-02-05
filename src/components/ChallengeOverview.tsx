@@ -121,17 +121,19 @@ export default function ChallengeOverview() {
           />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <Flame className="w-10 h-10 text-orange-500 animate-pulse" />
-              <h1 className="text-4xl font-bold tracking-tight">
-                Elite AI-Architect Challenge
-              </h1>
-              <span className="bg-orange-600 px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <Flame className="w-8 h-8 sm:w-10 sm:h-10 text-orange-500 animate-pulse" />
+                <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">
+                  Elite AI-Architect Challenge
+                </h1>
+              </div>
+              <span className="bg-orange-600 px-3 py-1 rounded-full text-xs sm:text-sm font-bold animate-pulse w-fit">
                 EXTREME MODE
               </span>
             </div>
 
-            <div className="text-xl mb-6 text-gray-300 font-normal">
+            <div className="text-base sm:text-xl mb-6 text-gray-300 font-normal">
               This challenge has a 5% pass rate among IIT graduates. Are you in the top 1%?
             </div>
 
@@ -241,8 +243,8 @@ export default function ChallengeOverview() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.6 + idx * 0.1 }}
                   className={`p-3 rounded-lg border-l-4 ${reason.type === 'success'
-                      ? 'bg-green-900/30 border-green-500'
-                      : 'bg-red-900/20 border-red-500/50'
+                    ? 'bg-green-900/30 border-green-500'
+                    : 'bg-red-900/20 border-red-500/50'
                     }`}
                 >
                   <div className="flex items-center gap-2">
@@ -272,7 +274,7 @@ export default function ChallengeOverview() {
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
               onClick={handleStartClick}
-              className="relative w-full bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 text-white py-6 rounded-xl font-bold text-2xl overflow-hidden group border-2 border-orange-500/50 shadow-lg shadow-orange-500/30"
+              className="relative w-full bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 text-white py-4 sm:py-6 rounded-xl font-bold text-lg sm:text-2xl overflow-hidden group border-2 border-orange-500/50 shadow-lg shadow-orange-500/30"
             >
               {/* Animated fire glow */}
               <motion.div
@@ -287,10 +289,10 @@ export default function ChallengeOverview() {
                 animate={{ x: isHovered ? ['0%', '200%'] : '0%' }}
                 transition={{ duration: 0.8 }}
               />
-              <span className="relative z-10 flex items-center justify-center gap-4 tracking-wide">
-                <Flame className="w-8 h-8 animate-pulse" />
-                BE BRAVE TAKE THE CHALLENGE
-                <Flame className="w-8 h-8 animate-pulse" />
+              <span className="relative z-10 flex items-center justify-center gap-2 sm:gap-4 tracking-wide px-2">
+                <Flame className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse shrink-0" />
+                <span className="text-center">BE BRAVE TAKE THE CHALLENGE</span>
+                <Flame className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse shrink-0" />
               </span>
             </motion.button>
           )}

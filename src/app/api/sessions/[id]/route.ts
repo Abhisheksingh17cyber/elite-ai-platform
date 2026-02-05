@@ -17,7 +17,7 @@ export async function GET(
   try {
     const sql = getDatabase();
     const { id } = await params;
-    
+
     const session = await sql`
       SELECT ts.*, c.email, c.name
       FROM test_sessions ts
@@ -85,7 +85,7 @@ export async function PATCH(
 
     // Build update query based on provided fields
     let result;
-    
+
     if (status === 'completed' || status === 'terminated') {
       // Update with ended_at timestamp
       result = await sql`
@@ -101,6 +101,15 @@ export async function PATCH(
         WHERE id = ${id}
         RETURNING *
       `;
+
+      // Also update the candidate status to inactive
+      if (result.length > 0) {
+        await sql`
+          UPDATE candidates 
+          SET status = 'inactive'
+          WHERE id = ${result[0].candidate_id}
+        `;
+      }
     } else {
       result = await sql`
         UPDATE test_sessions 

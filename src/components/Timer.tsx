@@ -43,7 +43,7 @@ export default function Timer() {
       className={`bg-linear-to-r ${getTimerColor()} rounded-xl p-4 shadow-2xl`}
       animate={{
         scale: isCritical ? [1, 1.02, 1] : 1,
-        boxShadow: isCritical 
+        boxShadow: isCritical
           ? ['0 0 20px rgba(239, 68, 68, 0.5)', '0 0 40px rgba(239, 68, 68, 0.8)', '0 0 20px rgba(239, 68, 68, 0.5)']
           : '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}
@@ -53,13 +53,13 @@ export default function Timer() {
         repeatType: 'reverse'
       }}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <div className="relative">
           <motion.div
             animate={{ rotate: challengeStarted ? 360 : 0 }}
             transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
           >
-            <Clock className={`w-8 h-8 ${getTextColor()}`} />
+            <Clock className={`w-6 h-6 sm:w-8 sm:h-8 ${getTextColor()}`} />
           </motion.div>
           {isCritical && (
             <motion.div
@@ -71,11 +71,11 @@ export default function Timer() {
             </motion.div>
           )}
         </div>
-        
+
         <div className="flex flex-col">
-          <span className="text-xs text-white/70 uppercase tracking-wider">Time Remaining</span>
+          <span className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wider">Time Remaining</span>
           <motion.span
-            className={`font-mono text-3xl font-bold ${getTextColor()}`}
+            className={`font-mono text-xl sm:text-3xl font-bold ${getTextColor()}`}
             key={timeRemaining}
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -91,7 +91,7 @@ export default function Timer() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2"
+              className="hidden sm:flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2"
             >
               <Zap className="w-4 h-4 text-yellow-400" />
               <span className="text-sm font-medium text-white">
